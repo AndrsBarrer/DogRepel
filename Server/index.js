@@ -6,7 +6,7 @@ The purpose of this is server is:
 */
 
 /*
-Definition of message standards to know what has happened or what should happen.
+Definition of message standards to know what has hexpress_appened or what should hexpress_appen.
 
 Dogs will be registered on the website, unsure right now if the website backend will
 register the dogs on the database or if the server should take care of everything.
@@ -18,31 +18,27 @@ Dog detected near station:
 
 */
 
-
+const express = require('express')
 const dgram = require('dgram');
+const cors = require('cors');
 const os = require('os');
-const mysql = require('mysql2')
-require('dotenv').config();
+const express_app = express();
+
+// Import dog API endpoints
+const { router: dogRoutes, uploadMessage } = require('./routes/dogs');
+const stationRoutes = require('./routes/stations');  // Import station routes
+const expressPort = 4000;
+
+const Express_tag = "Express: ";
+const UDP_tag = "UDP: ";
+
+express_app.use(express.json());     // Middleware to parse JSON
+express_app.use(cors());             // Enable CORS for requests from the Vue frontend
+express_app.use('/api/dogs', dogRoutes);   // Mount dog routes
+express_app.use('/api/stations', stationRoutes);  // Mount station routes
 
 // Create a UDP server
 const server = dgram.createSocket('udp4');
-
-const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
-});
-
-// Connect to MySQL database to write received messages
-db.connect(err => {
-    if (err) {
-        console.log("Could not connect to database:", err);
-    } else {
-        console.log("Connected to database.");
-    }
-})
-
 
 // emits when any error occurs
 server.on('error', (error) => {
@@ -52,15 +48,15 @@ server.on('error', (error) => {
 
 // emits on new datagram msg
 server.on('message', (msg, info) => {
-    console.log('Data received from client: ' + msg.toString());
-    console.log('Received %d bytes from %s:%d', msg.length, info.address, info.port);
+    console.log(UDP_tag + 'Data received from client: ' + msg.toString());
+    console.log(UDP_tag + 'Received %d bytes from %s:%d', msg.length, info.address, info.port);
 
     // Send acknowlegement back to ESP32 of message reception 
     server.send("ACK", info.port, info.address, (error) => {
         if (error) {
-            console.error('Error sending message:', error);
+            console.error(UDP_tag + 'Error sending message:', error);
         } else {
-            console.log('Verified packet sent to ESP32.');
+            console.log(UDP_tag + 'Verified packet sent to ESP32.');
         }
     });
 
@@ -69,22 +65,6 @@ server.on('message', (msg, info) => {
 
 });
 
-// Uploads message to MySQL database
-const uploadMessage = (message) => {
-    var msg = message.split(':');
-    console.log(msg);
-    
-    //DogRepel:DogID:StationID:Distance:Comment
-    // dog_id station_id
-    let query = `INSERT INTO dog_visits (dog_id, station_id, distance) VALUES (${msg[1]}, ${msg[2]}, ${parseFloat(msg[3])});`
-    
-    //DogRepel:1:1:2.4:TestingFirstInsert
-    db.query(query, (err, result) => {
-        if (err) throw err;
-        console.log(`Visit with Dog ID:${msg[1]}, Station ID: ${msg[2]} and distance: ${msg[3]} inserted.`)
-    });
-}
-
 // Start UDP server
 server.on('listening', () => {
     const address = server.address();
@@ -92,19 +72,23 @@ server.on('listening', () => {
     const family = address.family;
     const ipaddr = address.address;
     
-    console.log('Server is listening at port ' + port);
-    console.log('Server IP address (from server.address()): ' + ipaddr);
-    console.log('Server is IP4/IP6: ' + family);
+    console.log(UDP_tag + 'Server is listening at port ' + port);
+    console.log(UDP_tag + 'Server IP address (from server.address()): ' + ipaddr);
+    console.log(UDP_tag + 'Server is IP4/IP6: ' + family);
 
     // Display all network interfaces' IP addresses (for now to know local IP address, should set server on static IP later)
     const networkInterfaces = os.networkInterfaces();
     for (const [interfaceName, addresses] of Object.entries(networkInterfaces)) {
         addresses.forEach((addressInfo) => {
             if (addressInfo.family === 'IPv4' && !addressInfo.internal) {
-                console.log(`Network Interface ${interfaceName}: ${addressInfo.address}`);
+                console.log(UDP_tag + `Network Interface ${interfaceName}: ${addressInfo.address}`);
             }
         });
     }
+});
+
+express_app.listen(expressPort, () => {
+    console.log(Express_tag + `Server running on http://localhost:${expressPort}`);
 });
 
 // Bind to a port from environment variable or default to 2222
