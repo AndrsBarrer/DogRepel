@@ -14,18 +14,18 @@
 
 import { ref } from 'vue';
 
-const menuItems = ref(['Dashboard', 'Profile', 'Settings']); // Selection of all available menu tabs
+const menuItems = ref(['Dashboard', 'Profile', 'Register', 'Settings']); // Selection of all available menu tabs
 const selectedMenuItem = ref( menuItems.value[0]); // This will be the default item when the app starts
 
 
 // Defining what type of event we want to emit to the parent
-const emit = defineEmits(['sendMenuItem']);
+const emit = defineEmits(['selectedMenuItem']);
 
 // Updates selected variable with menuItem so that blue bar knows where it is supposed to be 
 // Function that emits with the defined type, a variable
 function selectMenuItem(menuItem: string) {
     selectedMenuItem.value = menuItem;
-    emit('sendMenuItem', menuItem);
+    emit('selectedMenuItem', menuItem);
 }
 </script>
 

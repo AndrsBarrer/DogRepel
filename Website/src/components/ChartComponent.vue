@@ -8,6 +8,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 
+// make sure to make periodic API calls for this, maybe every minute
 onMounted(() => {
   chartData.value = setChartData();
   chartOptions.value = setChartOptions();
@@ -15,7 +16,8 @@ onMounted(() => {
 
 const chartData = ref();
 const chartOptions = ref();
-      
+
+// This is where an API call will be made
 const setChartData = () => {
   const documentStyle = getComputedStyle(document.documentElement);
 
