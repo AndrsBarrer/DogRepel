@@ -26,10 +26,10 @@ app.component("Column", Column);
 app.use(PrimeVue, {
   // Default theme configuration
   theme: {
-    preset: Lara,
+    preset: Nora,
     options: {
       prefix: "p",
-      darkModeSelector: "system",
+      darkModeSelector: "false",
       cssLayer: false,
     },
   },
