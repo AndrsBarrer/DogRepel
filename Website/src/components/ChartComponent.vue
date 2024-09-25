@@ -21,6 +21,7 @@ const fetchDogVisits = async () => {
     // Fetch dog_visits data from the API
     const dogVisits = await DogService.getDogVisits();
 
+    console.log(dogVisits);
     // Map visit data: separate x (time in hours) and y (distance)
     const visitTimes = dogVisits.map((visit) =>
       new Date(visit.visit_time).getHours()

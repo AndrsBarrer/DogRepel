@@ -80,6 +80,22 @@ const registerDog = async () => {
     }
   }
 };
+
+const updateDog = async () => {
+  try {
+    const response = await axios.post("/api/dogs", {
+      name: dog.value.name,
+      breed: dog.value.breed,
+      age: dog.value.age,
+    });
+  } catch (error) {
+    if (error.response) {
+      message.value = error.response.data.error;
+    } else {
+      message.value = "An error occured.";
+    }
+  }
+};
 </script>
 
 <style lang="scss" scoped>

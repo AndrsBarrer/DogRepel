@@ -6,15 +6,12 @@
     <div v-if="currentMenuItem === 'Dashboard'">
       <ChartComponent />
 
-      <div class="datatable-components">
-        <DataTableComponent :columns="dogColumns" :data="dogs" />
-      </div>
+      <EditDogsTable />
     </div>
 
-    <h1 v-if="currentMenuItem === 'Profile'">profile will show here</h1>
-    <h1 v-if="currentMenuItem === 'Settings'">Settings will show here</h1>
-
     <RegisterComponent v-if="currentMenuItem === 'Register'" />
+
+    <h1 v-if="currentMenuItem === 'Settings'">Settings will show here</h1>
   </main>
 </template>
 
@@ -26,6 +23,7 @@ import ChartComponent from "../components/ChartComponent.vue";
 import MenuComponent from "../components/MenuComponent.vue";
 import RegisterComponent from "../components/RegisterComponent.vue";
 import DataTableComponent from "../components/DataTableComponent.vue";
+import EditDogsTable from "../components/EditDogsTable.vue";
 
 const currentMenuItem = ref("Dashboard");
 
@@ -46,7 +44,7 @@ let intervalId: NodeJS.Timeout;
 const fetchDogs = async () => {
   try {
     const data = await DogService.getDogs();
-    dogs.value = data; // Adjust if the data is nested
+    dogs.value = data.results; // Adjust if the data is nested
   } catch (error) {
     console.error("Error fetching dogs:", error);
   }
