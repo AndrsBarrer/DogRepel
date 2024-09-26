@@ -84,7 +84,7 @@ router.put("/", async (req, res) => {
   const { dog_id, name, breed, age } = req.body;
   try {
     let query = "UPDATE dogs SET name = ?, breed = ?, age = ? WHERE dog_id = ?";
-    const [result] = await db.query(query, [dog_id, name, breed, age]);
+    const [result] = await db.query(query, [name, breed, age, dog_id]);
     res.status(200).json({
       message: "Succesfully updated values.",
       result: result,
@@ -118,7 +118,6 @@ router.post("/dog_settings", async (req, res) => {
       });
     }
 
-    // Proceed with the database insertion
     try {
       const query =
         "INSERT INTO dog_settings (dog_id, alert_distance) VALUES (?, ?)";
