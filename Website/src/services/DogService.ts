@@ -1,5 +1,12 @@
 import axios from "axios";
 
+interface dog {
+  dog_id?: Number;
+  name: String;
+  breed: String;
+  age: Number;
+}
+
 // Create an instance of Axios with a base URL if needed
 const apiClient = axios.create({
   baseURL: "http://localhost:4000/api",
@@ -19,12 +26,31 @@ const DogService = {
     }
   },
 
+  async registerDog(data: dog) {
+    try {
+      console.log("trying2...");
+      await apiClient.post("/dogs", data);
+    } catch (error) {
+      console.log("An error occurred inserting dog: ", error);
+      throw error;
+    }
+  },
+
   async getDogVisits() {
     try {
       const response = await apiClient.get("/dogs/dog_visits");
       return response.data;
     } catch (error) {
       console.error("Error fetching dog visits:", error);
+      throw error;
+    }
+  },
+
+  async updateDogInfo(data: dog) {
+    try {
+      await apiClient.put("/dogs", data);
+    } catch (error) {
+      console.log("An error occurred updating dog: ", error);
       throw error;
     }
   },

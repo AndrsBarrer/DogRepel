@@ -53,6 +53,7 @@
 </template>
 
 <script setup lang="ts">
+import DogService from "../services/DogService";
 import { ref } from "vue";
 import axios from "axios";
 
@@ -66,34 +67,14 @@ const message = ref("");
 
 const registerDog = async () => {
   try {
-    const response = await axios.post("/api/dogs", {
+    await DogService.registerDog({
       name: dog.value.name,
       breed: dog.value.breed,
       age: dog.value.age,
     });
-    message.value = response.data.message;
+    message.value = "Success!";
   } catch (error) {
-    if (error.response) {
-      message.value = error.response.data.error;
-    } else {
-      message.value = "An error occured.";
-    }
-  }
-};
-
-const updateDog = async () => {
-  try {
-    const response = await axios.post("/api/dogs", {
-      name: dog.value.name,
-      breed: dog.value.breed,
-      age: dog.value.age,
-    });
-  } catch (error) {
-    if (error.response) {
-      message.value = error.response.data.error;
-    } else {
-      message.value = "An error occured.";
-    }
+    message.value = "Failed.";
   }
 };
 </script>

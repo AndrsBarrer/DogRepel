@@ -16,12 +16,11 @@ import DogService from "../services/DogService";
 const chartData = ref();
 const chartOptions = ref();
 
-const fetchDogVisits = async () => {
+async function fetchDogVisits() {
   try {
     // Fetch dog_visits data from the API
     const dogVisits = await DogService.getDogVisits();
 
-    console.log(dogVisits);
     // Map visit data: separate x (time in hours) and y (distance)
     const visitTimes = dogVisits.map((visit) =>
       new Date(visit.visit_time).getHours()
@@ -46,7 +45,7 @@ const fetchDogVisits = async () => {
   } catch (error) {
     console.error("Error fetching dog visits:", error);
   }
-};
+}
 
 onMounted(() => {
   // Initialize chart options

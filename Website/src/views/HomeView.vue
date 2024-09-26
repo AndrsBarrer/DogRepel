@@ -1,17 +1,23 @@
 <!-- src/views/HomeView.vue -->
 <template>
   <main>
-    <MenuComponent @selectedMenuItem="changeMenu"></MenuComponent>
+    <div class="page-container">
+      <div class="row1">
+        <MenuComponent @selectedMenuItem="changeMenu"></MenuComponent>
+      </div>
+      <div v-if="currentMenuItem === 'Dashboard'">
+        <ChartComponent />
 
-    <div v-if="currentMenuItem === 'Dashboard'">
-      <ChartComponent />
+        <div class="row2">
+          <EditDogsTable />
+          <EditStationsTable />
+        </div>
+      </div>
 
-      <EditDogsTable />
+      <RegisterComponent v-if="currentMenuItem === 'Register'" />
+
+      <h1 v-if="currentMenuItem === 'Settings'">Settings will show here</h1>
     </div>
-
-    <RegisterComponent v-if="currentMenuItem === 'Register'" />
-
-    <h1 v-if="currentMenuItem === 'Settings'">Settings will show here</h1>
   </main>
 </template>
 
@@ -24,59 +30,41 @@ import MenuComponent from "../components/MenuComponent.vue";
 import RegisterComponent from "../components/RegisterComponent.vue";
 import DataTableComponent from "../components/DataTableComponent.vue";
 import EditDogsTable from "../components/EditDogsTable.vue";
+import EditStationsTable from "../components/EditStationsTable.vue";
 
 const currentMenuItem = ref("Dashboard");
 
 const changeMenu = (payload) => {
   currentMenuItem.value = payload;
 };
-
-const dogColumns = [
-  { field: "name", header: "Name" },
-  { field: "breed", header: "Breed" },
-  { field: "age", header: "Age" },
-];
-
-const dogs = ref<any[]>([]); // Adjust type if necessary
-let intervalId: NodeJS.Timeout;
-
-// Function to fetch and update dogs data
-const fetchDogs = async () => {
-  try {
-    const data = await DogService.getDogs();
-    dogs.value = data.results; // Adjust if the data is nested
-  } catch (error) {
-    console.error("Error fetching dogs:", error);
-  }
-};
-
-// Fetch data when component is mounted
-onMounted(() => {
-  fetchDogs(); // Initial fetch
-  intervalId = setInterval(fetchDogs, 5000); // Poll every 5 seconds
-});
-
-// Cleanup interval on component unmount
-onUnmounted(() => {
-  if (intervalId) clearInterval(intervalId);
-});
 </script>
 
 <style scoped>
 main {
   padding: 20px;
 }
-
-.datatable-components {
+.page-container {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 20px;
+  flex-direction: column;
 
-  .data-table {
-    flex: 1 1 45%;
-    min-width: 0;
-    max-width: 100%;
+  .row2 {
+    display: flex;
+    width: 100%;
+    gap: 4rem;
+    flex-direction: row;
+    justify-content: center;
+
+    /* Ensure each child div (e.g., EditDogsTable and EditStationsTable) takes up 50% of the container */
+    & > div {
+      /* flex: 1 1 50%:
+         - 1 (grow): allows the div to grow if there is extra space
+         - 1 (shrink): allows the div to shrink if space is limited
+         - 50% (basis): initially sets the width of each div to 50% of the row2 container */
+      flex: 1 1 50%;
+
+      /* max-width: 50% ensures that even if the div grows, it will not exceed 50% of the parent width */
+      max-width: 50%;
+    }
   }
 }
 </style>
