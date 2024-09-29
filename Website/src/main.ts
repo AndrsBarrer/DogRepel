@@ -30,12 +30,12 @@ app.component("InputNumber", InputNumber);
 app.use(PrimeVue, {
   // Default theme configuration
   theme: {
-    preset: Nora,
-    options: {
-      prefix: "p",
-      darkModeSelector: "false",
-      cssLayer: false,
-    },
+    preset: Aura,
+    // options: {
+    //   prefix: "p",
+    //   darkModeSelector: "true",
+    //   cssLayer: false,
+    // },
   },
 });
 

@@ -35,7 +35,7 @@
 
       <Column
         :rowEditor="true"
-        style="width: 5%; min-width: 8rem"
+        style="width: 1%; min-width: 8rem"
         bodyStyle="text-align:center"
       ></Column>
     </DataTable>

@@ -30,19 +30,34 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from "vue";
+<script setup lang="ts">
+import { ref, onMounted, onUnmounted } from "vue";
 import StationService from "../services/StationService";
+let intervalId: NodeJS.Timeout;
 
 const stations = ref([]);
 const editingRows = ref([]);
 
-onMounted(async () => {
+// Function to fetch and update dogs data
+const fetchStations = async () => {
   try {
-    const response = await StationService.getStations();
-    stations.value = response.results;
+    const data = await StationService.getStations();
+    stations.value = data.results;
   } catch (error) {
-    console.error("Error fetching stations: ", error);
+    console.error("Error fetching stations:", error);
+  }
+};
+
+// Fetch data when component is mounted
+onMounted(() => {
+  fetchStations(); // Initial fetch
+  intervalId = setInterval(fetchStations, 5000); // Poll every 5 seconds
+});
+
+// Cleanup interval on component unmount
+onUnmounted(() => {
+  if (intervalId) {
+    clearInterval(intervalId);
   }
 });
 

@@ -2,21 +2,30 @@
 <template>
   <main>
     <div class="page-container">
-      <div class="row1">
+      <!-- <div class="row1">
         <MenuComponent @selectedMenuItem="changeMenu"></MenuComponent>
-      </div>
-      <div v-if="currentMenuItem === 'Dashboard'">
+      </div> -->
+      <!-- <div v-if="currentMenuItem === 'Dashboard'">
         <ChartComponent />
 
-        <div class="row2">
+        <div class="row2-edit">
           <EditDogsTable />
           <EditStationsTable />
         </div>
+      </div> -->
+
+      <ChartComponent />
+      <div class="tables">
+        <EditDogsTable />
+        <EditStationsTable />
       </div>
 
-      <RegisterComponent v-if="currentMenuItem === 'Register'" />
+      <!-- <div class="row2-register" v-if="currentMenuItem === 'Register'">
+        <RegisterDog />
+        <RegisterStation />
+      </div>
 
-      <h1 v-if="currentMenuItem === 'Settings'">Settings will show here</h1>
+      <h1 v-if="currentMenuItem === 'Settings'">Settings will show here</h1> -->
     </div>
   </main>
 </template>
@@ -27,7 +36,8 @@ import DogService from "../services/DogService";
 
 import ChartComponent from "../components/ChartComponent.vue";
 import MenuComponent from "../components/MenuComponent.vue";
-import RegisterComponent from "../components/RegisterComponent.vue";
+import RegisterDog from "../components/RegisterDog.vue";
+import RegisterStation from "../components/RegisterStation.vue";
 import DataTableComponent from "../components/DataTableComponent.vue";
 import EditDogsTable from "../components/EditDogsTable.vue";
 import EditStationsTable from "../components/EditStationsTable.vue";
@@ -47,7 +57,7 @@ main {
   display: flex;
   flex-direction: column;
 
-  .row2 {
+  .tables {
     display: flex;
     width: 100%;
     gap: 4rem;
@@ -65,6 +75,13 @@ main {
       /* max-width: 50% ensures that even if the div grows, it will not exceed 50% of the parent width */
       max-width: 50%;
     }
+  }
+
+  .row2-register {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    width: 100%;
   }
 }
 </style>
