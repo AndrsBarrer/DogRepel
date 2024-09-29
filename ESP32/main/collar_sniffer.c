@@ -44,22 +44,23 @@
 /* TAG of ESP32 for I/O operation */
 static const char *TAG = "Sniff sniff";
 static bool RUNNING = true;
-
+static bool runTCPtask = false;
 // This is going to be used as a timer cooldown for duplicate MACs
 static uint32_t millis = 0;
-
-/* FreeRTOS event group to signal when we are connected & ready to make a request */
-static EventGroupHandle_t wifi_event_group;
 
 #define WIFI_SSID "Ext_2.4"
 #define WIFI_PASS "Moorparkcalifornia"
 #define CONFIG_CHANNEL 6
 #define MAC_STR_LEN 18
 
+// Used to connect to TCP server
+#define HOST_IP_ADDR "192.168.0.28" // localhost
+#define PORT 8266
+
 #define MNGMT_PROBE_MASK 0x00F0
 #define MNGMT_PROBE_PACKET 0x0040
 #define MAX_DEVICES 10
-#define COOLDOWN_PERIOD 10000 // Cooldown period in milliseconds
+#define COOLDOWN_PERIOD 5000 // Cooldown period in milliseconds
 
 typedef struct
 {
@@ -82,6 +83,9 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
 static void sniffer_task(void *pvParameter);
 static void wifi_sniffer_init(void);
 static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t type);
+static void tcp_client_task(void *pvParameters);
+bool handleDeviceCommand(char *rx_buffer);
+char **tokenizeString(char *str, const char *delim);
 void wifi_init_sta();
 void delayMs(uint16_t ms);
 void printMACS(packet_info_timeout mac_list[MAX_DEVICES], int size);
@@ -89,21 +93,32 @@ void printMAC(uint8_t mac[6]);
 
 void formatMAC2STR(uint8_t mac[6], char *returnMACstr);
 
+// Used to store MAC of device when an event occurs
+static char got_collar_mac[18] = {0};
+static uint8_t station_mac_addr[6] = {0};
+static char station_mac_addr_str[20] = {0};
+
 void app_main(void)
 {
     ESP_LOGI(TAG, "[+] Startup...");
 
+    ESP_LOGI(TAG, "[+] Reading MAC of Station Mode");
+    esp_read_mac(station_mac_addr, ESP_MAC_WIFI_STA);      // Read the MAC of the ESP32 Station
+    formatMAC2STR(station_mac_addr, station_mac_addr_str); // Save the MAC as a string so it can be sent to the server
+
+    ESP_LOGI(TAG, "[+] Initializing NVS storage");
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
+    ESP_LOGI(TAG, "[+] Initializing ESP in Station Mode");
     wifi_init_sta();
 
-    ESP_LOGI(TAG, "[!] Starting sniffing task...");
+    ESP_LOGI(TAG, "[+] Starting sniffing task...");
     xTaskCreate(&sniffer_task, "sniffer_task", 10000, NULL, 1, NULL);
 
     while (RUNNING)
-    { // every 0.5s check if fatal error occurred
-        delayMs(500);
+    {
+        delayMs(1);
     }
 }
 
@@ -112,17 +127,22 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t e
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
     {
         esp_wifi_connect();
-        ESP_LOGI(TAG, "Station started");
+        ESP_LOGI(TAG, "[✓] Station started");
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
-        ESP_LOGI(TAG, "Disconnected from Wi-Fi, trying to reconnect...");
+        runTCPtask = false;
+        ESP_LOGI(TAG, "[!] Disconnected from Wi-Fi, trying to reconnect...");
         esp_wifi_connect();
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-        ESP_LOGI(TAG, "Got IP:" IPSTR, IP2STR(&event->ip_info.ip));
+        ESP_LOGI(TAG, "[✓] Got IP:" IPSTR, IP2STR(&event->ip_info.ip));
+        runTCPtask = true;
+
+        // Create the TCP client task
+        xTaskCreate(tcp_client_task, "tcp_client_task", 4096, NULL, 5, NULL);
     }
 }
 
@@ -150,12 +170,12 @@ void wifi_init_sta(void)
     esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_sta_config);
     esp_wifi_start();
 
-    ESP_LOGI(TAG, "wifi_init_sta finished.");
+    ESP_LOGI(TAG, "[✓] Initialization of Station finished.");
 }
 
 static void sniffer_task(void *pvParameter)
 {
-    ESP_LOGI(TAG, "[SNIFFER] Sniffer task created");
+    ESP_LOGI(TAG, "[+] Sniffer Task created");
     wifi_sniffer_init();
 
     while (1)
@@ -183,6 +203,7 @@ static void wifi_sniffer_init()
         .filter_mask = WIFI_PROMIS_FILTER_MASK_MGMT, // we only care about management type packets
     }));
     ESP_ERROR_CHECK(esp_wifi_set_promiscuous_rx_cb(&wifi_sniffer_packet_handler));
+    ESP_LOGI(TAG, "[✓] Sniffer Task finished initialization");
 }
 
 // Every time a packet is received, this function gets called
@@ -263,8 +284,6 @@ static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t 
                     // Check for the same MAC address
                     if (!memcmp(mac_address, mac_list[i].mac, 6))
                     {
-                        // ESP_LOGI(TAG, "[!] current_timestamp: %ld vs mac_list[i].last_time_received: %ld = %ld", current_timestamp, mac_list[i].last_time_received, current_timestamp - mac_list[i].last_time_received);
-
                         // Check if the cooldown period has expired
                         if (current_timestamp - mac_list[i].last_time_received < COOLDOWN_PERIOD)
                         {
@@ -284,7 +303,7 @@ static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t 
                         {
                             if (!memcmp(mac_address, mac_list[i].mac, 6))
                             {
-                                ESP_LOGI(TAG, "[+] Updated mac in list with timestamp: %ld", current_timestamp);
+                                // ESP_LOGI(TAG, "[!] Updated mac in list with timestamp: %ld", current_timestamp);
                                 mac_list[i].last_time_received = current_timestamp;
                                 mac_found = true;
                             }
@@ -293,7 +312,6 @@ static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t 
                         // If the MAC was not found in the list, add it to the list
                         if (!mac_found)
                         {
-                            ESP_LOGI(TAG, "[+] Added mac to list with timestamp: %ld", current_timestamp);
                             memcpy(mac_list[current_mac_index].mac, mac_address, 6);
                             mac_list[current_mac_index].last_time_received = current_timestamp;
                             current_mac_index++;
@@ -303,10 +321,13 @@ static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t 
                     // Format the MAC to a string so it can be printed and sent to the server as a string
                     formatMAC2STR(mac_address, mac_string);
 
-                    // Log the MAC address
-                    ESP_LOGI(TAG, "Device MAC Address: %s", mac_string);
-                    ESP_LOGI(TAG, "Received RSSI: %d", packet->rx_ctrl.rssi);
-                    ESP_LOGI(TAG, "Device attempted to connect to SSID: %.*s\n\n", ssid_len, ssid);
+                    // Log the info obtained
+                    ESP_LOGI(TAG, "[!] MAC Address: %s", mac_string);
+                    ESP_LOGI(TAG, "[!] RSSI: %d", packet->rx_ctrl.rssi);
+                    ESP_LOGI(TAG, "[!] SSID: %.*s\n\n", ssid_len, ssid);
+
+                    // Save the stored MAC so that the TCP task can send a message
+                    strcpy(got_collar_mac, mac_string);
 
                     // Print all of the available stored MAC addresses
                     printMACS(mac_list, current_mac_index);
@@ -318,12 +339,13 @@ static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t 
 
 void printMACS(packet_info_timeout mac_list[MAX_DEVICES], int size)
 {
-    printf("All MACs saved: \n");
+    printf("\n[!] All MACs saved: \n");
     for (int i = 0; i < size; i++)
     {
         printf("[%d]: ", i + 1);
         printMAC(mac_list[i].mac);
     }
+    printf("\n");
     fflush(stdout);
 }
 
@@ -333,7 +355,6 @@ void printMAC(uint8_t mac[6])
            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
 
-#define MAC_STR_LEN 18
 void formatMAC2STR(uint8_t mac[6], char *returnMACstr)
 {
     snprintf(returnMACstr, MAC_STR_LEN, "%02X:%02X:%02X:%02X:%02X:%02X",
@@ -344,4 +365,237 @@ void formatMAC2STR(uint8_t mac[6], char *returnMACstr)
 void delayMs(uint16_t ms)
 {
     vTaskDelay(ms / portTICK_PERIOD_MS);
+}
+
+/*
+TCP task will:
+- communicate events (send MAC of device to server)
+- receive settings adjustments for distance and camera activation
+
+DogRepelEvent:MAC:StationID:Distance
+*/
+/* this will be used to send Login and Keep Alives, make it simpler */
+static void tcp_client_task(void *pvParameters)
+{
+    char rx_buffer[128];
+    char tx_buffer[128];
+    char host_ip[] = HOST_IP_ADDR;
+    int addr_family = 0;
+    int ip_protocol = 0;
+
+    while (runTCPtask)
+    {
+        static bool connected = false;
+
+        struct sockaddr_in dest_addr;
+        dest_addr.sin_addr.s_addr = inet_addr(host_ip);
+        dest_addr.sin_family = AF_INET;
+        dest_addr.sin_port = htons(PORT);
+        addr_family = AF_INET;
+        ip_protocol = IPPROTO_IP;
+
+        ESP_LOGE(TAG, "[!] Creating TCP socket");
+        int sock = socket(addr_family, SOCK_STREAM, ip_protocol);
+        if (sock < 0)
+        {
+            ESP_LOGE(TAG, "[X] Unable to create socket: errno %d, retrying.", errno);
+            delayMs(3000);
+            continue;
+        }
+        ESP_LOGE(TAG, "[✓] Created TCP socket");
+
+        // This is used to set the timeout in seconds so that the sends and recvs don't hang
+        struct timeval timeout;
+        timeout.tv_sec = 5;
+        timeout.tv_usec = 0;
+
+        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout);
+        setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof timeout);
+
+        ESP_LOGI(TAG, "[!] Connecting to %s:%d", host_ip, PORT);
+
+        int err = connect(sock, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr_in));
+        if (err != 0)
+        {
+            ESP_LOGE(TAG, "[X] Socket unable to connect: errno %d. Closing socket.", errno);
+            close(sock); // close the socket to prevent multiple sockets from opening
+            delayMs(3000);
+            continue;
+        }
+        ESP_LOGI(TAG, "[✓] Successfully connected");
+        connected = true;
+
+        // Change the timeout time now to 1 second
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 500000;
+        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout);
+        setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof timeout);
+
+        while (connected)
+        {
+            if (strlen(got_collar_mac) > 0)
+            {
+                // Make sure to also send the station MAC along with the collar MAC
+                snprintf(tx_buffer, sizeof(tx_buffer), "%s-%s", station_mac_addr_str, got_collar_mac);
+                err = send(sock, tx_buffer, strlen(tx_buffer), 0);
+
+                // Clear the value so that it only sends once
+                memset(got_collar_mac, 0, sizeof(got_collar_mac));
+
+                if (err < 0)
+                {
+                    ESP_LOGE(TAG, "Error occured during sending: errno %d", errno);
+                }
+            }
+
+            // In this case, the station is receiving a message to update its distance threshold
+            int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
+            if (len > 0)
+            {
+                rx_buffer[len] = '\0'; // Null-terminate whatever we received and treat like a string
+                ESP_LOGI(TAG, "Received %d bytes from %s: %s", len, host_ip, rx_buffer);
+
+                // If the value received is not ACK
+                if (strncmp(rx_buffer, "ACK", 2))
+                {
+                    // Pass what was received to be handled
+                    handleDeviceCommand(rx_buffer);
+                }
+            }
+
+            if (sock == -1)
+            {
+                ESP_LOGE(TAG, "[!] Socket failed, closing.");
+                close(sock);
+                break;
+            }
+            delayMs(1);
+        }
+    }
+    vTaskDelete(NULL);
+}
+
+bool handleDeviceCommand(char *rx_buffer)
+{
+    // DogRepelEvent-StationMAC-distance
+
+    // Process the received string to get tokens
+    char **tokens = tokenizeString(rx_buffer, "-");
+
+    printf("tokens: %s-%s", tokens[1], tokens[2]);
+    // // Compare the MAC of the device to ensure the message is for the device
+    // if (!strcmp(, )
+    // {
+    //     ESP_LOGI(TAG, "Valid command has been received");
+    //     // Reading
+    //     if (!strcmp(tokens[2], "R"))
+    //     {
+    //         // Read the value from the LED
+    //         if (!strcmp(tokens[3], "L"))
+    //         {
+    //             ESP_LOGI(TAG, "Reading the LEDs value...");
+    //             valueLED = gpio_get_level(LED);
+    //             snprintf(tx_buffer, sizeBuffer, "ACK:%d", valueLED);
+    //             validOp = true;
+    //         }
+
+    //         // Read the value from the ADC
+    //         else if (!strcmp(tokens[3], "A"))
+    //         {
+    //             ESP_LOGI(TAG, "Reading the ADCs value...");
+    //             valueADC = ADC1_Ch3_Read();
+    //             snprintf(tx_buffer, sizeBuffer, "ACK:%d", valueADC);
+    //             validOp = true;
+    //         }
+
+    //         // Read the dev id from the device that was set
+    //         else if (!strcmp(tokens[3], "DEV"))
+    //         {
+    //             nvs_handle_t my_handle;
+    //             err = nvs_open("wifi_storage", NVS_READONLY, &my_handle);
+    //             if (err != ESP_OK)
+    //             {
+    //                 ESP_LOGI(TAG, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
+    //             }
+    //             else
+    //             {
+    //                 ESP_LOGI(TAG, "Attempting to retrieve\n");
+    //                 // Retrieve dev id from NVS
+    //                 err = nvs_get_str(my_handle, "receivedName", returnStorage, &returnStorage_len);
+
+    //                 if (err != ESP_OK)
+    //                 {
+    //                     ESP_LOGI(TAG, "Failed to read dev ID from NVS: %s\n", esp_err_to_name(err));
+    //                     snprintf(tx_buffer, sizeBuffer, "NACK");
+    //                 }
+    //                 else
+    //                 {
+    //                     snprintf(tx_buffer, sizeBuffer, "ACK:%s", returnStorage);
+    //                     validOp = true;
+    //                 }
+    //             }
+    //             nvs_close(my_handle);
+    //         }
+    //     }
+    //     // Writing
+    //     else if (!strcmp(tokens[2], "W"))
+    //     {
+    //         if (!strcmp(tokens[3], "L"))
+    //         {
+    //             if (!strcmp(tokens[4], "0"))
+    //             {
+    //                 ESP_LOGI(TAG, "Turning the LED off...");
+    //                 gpio_set_level(LED, 0);
+    //                 snprintf(tx_buffer, sizeBuffer, "ACK:%d", gpio_get_level(LED));
+    //                 validOp = true;
+    //             }
+    //             else if (!strcmp(tokens[4], "1"))
+    //             {
+    //                 ESP_LOGI(TAG, "Turning the LED on...");
+    //                 gpio_set_level(LED, 1);
+    //                 snprintf(tx_buffer, sizeBuffer, "ACK:1");
+    //                 validOp = true;
+    //             }
+    //         }
+
+    //         // Facilitates NVS clearing, extra command to make it easier
+    //     }
+    //     else if (!strcmp(tokens[2], "RESET"))
+    //     {
+    //         // Erase everything that is in the nvs storage
+    //         ESP_LOGI(TAG, "Erasing everything in NVS...");
+    //         err = nvs_flash_erase();
+    //         if (err == ESP_OK)
+    //         {
+    //             ESP_LOGI(TAG, "NVS erased! Rebooting.");
+    //             esp_restart();
+    //         }
+    //     }
+    // }
+
+    // // If there was no valid operation, add a NACK as a response
+    // if (!validOp)
+    // {
+    //     snprintf(tx_buffer, sizeBuffer, "NACK");
+    //     return 0;
+    // }
+    return 1;
+}
+
+char **tokenizeString(char *str, const char *delim)
+{
+    char **tokens = (char **)malloc(30 * sizeof(char *));
+    char *token;
+    int i = 0;
+
+    token = strtok(str, delim);
+
+    while (token != NULL)
+    {
+        tokens[i++] = token;
+        token = strtok(NULL, delim);
+    }
+    tokens[i] = NULL; // Null-terminate the tokens array
+
+    return tokens;
 }
