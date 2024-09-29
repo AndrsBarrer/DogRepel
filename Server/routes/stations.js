@@ -6,7 +6,10 @@ const db = require("../db"); // Import the centralized DB connection
 router.get("/", async (req, res) => {
   try {
     const [results] = await db.query("SELECT * FROM stations");
-    res.json(results);
+    res.status(200).json({
+      message: "Succesfully returned results.",
+      results: results,
+    });
   } catch (err) {
     console.error("SQL Error:", err);
     res.status(500).json({ error: "Failed to fetch stations" });
