@@ -1,3 +1,16 @@
+
+// #define COLLAR_CODE
+#define STATION_CODE
+
+/*
+Todo:
+Station code:
+- add webpage to setup wifi connection (store in NVS)
+- add camera code
+
+Collar code:
+- clean up code a bit
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +29,7 @@
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "esp_system.h"
+#include "esp_mac.h"
 
 #include "esp_log.h"
 #include "nvs_flash.h"
@@ -23,6 +37,7 @@
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
 
+#ifdef STATION_CODE
 /* --- Some configurations --- */
 #define SSID_MAX_LEN (32 + 1) // max length of a SSID
 #define MD5_LEN (32 + 1)      // length of md5 hash
@@ -43,10 +58,9 @@
 
 /* TAG of ESP32 for I/O operation */
 static const char *TAG = "Sniff sniff";
+
 static bool RUNNING = true;
 static bool runTCPtask = false;
-// This is going to be used as a timer cooldown for duplicate MACs
-static uint32_t millis = 0;
 
 #define WIFI_SSID "Ext_2.4"
 #define WIFI_PASS "Moorparkcalifornia"
@@ -55,7 +69,7 @@ static uint32_t millis = 0;
 
 // Used to connect to TCP server
 #define HOST_IP_ADDR "192.168.0.28" // localhost
-#define PORT 8266
+#define PORT 2222
 
 #define MNGMT_PROBE_MASK 0x00F0
 #define MNGMT_PROBE_PACKET 0x0040
@@ -90,7 +104,6 @@ void wifi_init_sta();
 void delayMs(uint16_t ms);
 void printMACS(packet_info_timeout mac_list[MAX_DEVICES], int size);
 void printMAC(uint8_t mac[6]);
-
 void formatMAC2STR(uint8_t mac[6], char *returnMACstr);
 
 // Used to store MAC of device when an event occurs
@@ -180,7 +193,6 @@ static void sniffer_task(void *pvParameter)
 
     while (1)
     {
-        millis++;
         delayMs(1);
     }
 }
@@ -394,7 +406,7 @@ static void tcp_client_task(void *pvParameters)
         addr_family = AF_INET;
         ip_protocol = IPPROTO_IP;
 
-        ESP_LOGE(TAG, "[!] Creating TCP socket");
+        ESP_LOGI(TAG, "[!] Creating TCP socket");
         int sock = socket(addr_family, SOCK_STREAM, ip_protocol);
         if (sock < 0)
         {
@@ -402,7 +414,7 @@ static void tcp_client_task(void *pvParameters)
             delayMs(3000);
             continue;
         }
-        ESP_LOGE(TAG, "[✓] Created TCP socket");
+        ESP_LOGI(TAG, "[✓] Created TCP socket");
 
         // This is used to set the timeout in seconds so that the sends and recvs don't hang
         struct timeval timeout;
@@ -436,7 +448,7 @@ static void tcp_client_task(void *pvParameters)
             if (strlen(got_collar_mac) > 0)
             {
                 // Make sure to also send the station MAC along with the collar MAC
-                snprintf(tx_buffer, sizeof(tx_buffer), "%s-%s", station_mac_addr_str, got_collar_mac);
+                snprintf(tx_buffer, sizeof(tx_buffer), "EVENT-%s-%s", station_mac_addr_str, got_collar_mac);
                 err = send(sock, tx_buffer, strlen(tx_buffer), 0);
 
                 // Clear the value so that it only sends once
@@ -455,12 +467,8 @@ static void tcp_client_task(void *pvParameters)
                 rx_buffer[len] = '\0'; // Null-terminate whatever we received and treat like a string
                 ESP_LOGI(TAG, "Received %d bytes from %s: %s", len, host_ip, rx_buffer);
 
-                // If the value received is not ACK
-                if (strncmp(rx_buffer, "ACK", 2))
-                {
-                    // Pass what was received to be handled
-                    handleDeviceCommand(rx_buffer);
-                }
+                // Pass what was received to be handled
+                handleDeviceCommand(rx_buffer);
             }
 
             if (sock == -1)
@@ -482,7 +490,8 @@ bool handleDeviceCommand(char *rx_buffer)
     // Process the received string to get tokens
     char **tokens = tokenizeString(rx_buffer, "-");
 
-    printf("tokens: %s-%s", tokens[1], tokens[2]);
+    printf("tokens: %s %s %s", tokens[1], tokens[2], tokens[3]);
+    fflush(stdout);
     // // Compare the MAC of the device to ensure the message is for the device
     // if (!strcmp(, )
     // {
@@ -589,7 +598,6 @@ char **tokenizeString(char *str, const char *delim)
     int i = 0;
 
     token = strtok(str, delim);
-
     while (token != NULL)
     {
         tokens[i++] = token;
@@ -599,3 +607,136 @@ char **tokenizeString(char *str, const char *delim)
 
     return tokens;
 }
+
+#endif
+
+#ifdef COLLAR_CODE
+/* STA Configuration */
+#define WIFI_STA_SSID "Dog_Repel"
+#define WIFI_STA_PASSWD "123456789"
+#define ESP_MAXIMUM_RETRY 5
+#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA2_PSK
+
+/* The event group allows multiple bits for each event, but we only care about two events:
+ * - we are connected to the AP with an IP
+ * - we failed to connect after the maximum amount of retries */
+#define WIFI_CONNECTED_BIT BIT0
+#define WIFI_FAIL_BIT BIT1
+
+static const char *TAG_AP = "WiFi SoftAP";
+static const char *TAG_STA = "WiFi Station";
+
+// Function prototypes
+esp_err_t initIO();
+void ADC1_Ch3_Ini(void);
+float ADC1_Ch3_Read(void);
+float ADC1_Ch3_Read_mV(void);
+bool handleDeviceCommand(char **tokens, char *tx_buffer, size_t sizeBuffer);
+bool handleWifiMessages(char **tokens, char *tx_buffer, size_t sizeBuffer);
+
+void delayMs(uint16_t ms);
+
+static void wifi_event_handler(void *arg, esp_event_base_t event_base,
+                               int32_t event_id, void *event_data);
+
+void wifi_init_softap(void);
+void wifi_init_sta(void);
+static int s_retry_num = 0;
+
+/* FreeRTOS event group to signal when we are connected/disconnected */
+static EventGroupHandle_t s_wifi_event_group;
+
+static void wifi_event_handler(void *arg, esp_event_base_t event_base,
+                               int32_t event_id, void *event_data)
+{
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STACONNECTED)
+    {
+        wifi_event_ap_staconnected_t *event = (wifi_event_ap_staconnected_t *)event_data;
+        // ESP_LOGI(TAG_AP, "Station " MACSTR " joined, AID=%d",MAC2STR(event->mac), event->aid);
+    }
+    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STADISCONNECTED)
+    {
+        wifi_event_ap_stadisconnected_t *event = (wifi_event_ap_stadisconnected_t *)event_data;
+        // ESP_LOGI(TAG_AP, "Station " MACSTR " left, AID=%d", MAC2STR(event->mac), event->aid);
+    }
+    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
+    {
+        esp_wifi_connect();
+        ESP_LOGI(TAG_STA, "Station started");
+    }
+    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
+    {
+        ESP_LOGI(TAG_STA, "Disconnected from Wi-Fi, trying to reconnect...");
+        esp_wifi_connect();
+    }
+    else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
+    {
+        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
+        ESP_LOGI(TAG_STA, "Got IP:" IPSTR, IP2STR(&event->ip_info.ip));
+        // s_retry_num = 0;
+        // xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+    }
+}
+
+/* Initialize wifi station */
+void wifi_init_sta(void)
+{
+    esp_netif_init();
+    esp_event_loop_create_default();
+
+    // Initialize Wi-Fi in station mode
+    esp_netif_create_default_wifi_sta();
+
+    wifi_init_config_t wifi_initiation = WIFI_INIT_CONFIG_DEFAULT();
+
+    esp_wifi_init(&wifi_initiation);
+    esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_event_handler, NULL);
+    esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, wifi_event_handler, NULL);
+
+    // Configure Wi-Fi station
+    wifi_config_t wifi_sta_config = {
+        .sta = {
+            .ssid = WIFI_STA_SSID,
+            .password = WIFI_STA_PASSWD,
+            .scan_method = WIFI_ALL_CHANNEL_SCAN,
+            .failure_retry_cnt = ESP_MAXIMUM_RETRY,
+            .threshold.authmode = ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD,
+            .sae_pwe_h2e = WPA3_SAE_PWE_BOTH,
+        },
+    };
+
+    // Apply the Wi-Fi configuration
+    esp_wifi_set_mode(WIFI_MODE_STA);
+    esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_sta_config);
+    esp_wifi_start();
+
+    ESP_LOGI(TAG_STA, "wifi_init_sta finished.");
+}
+
+void delayMs(uint16_t ms)
+{
+    vTaskDelay(ms / portTICK_PERIOD_MS);
+}
+//---------------------------------------END OF WIFI-------------------------------------------
+
+void app_main(void)
+{
+    esp_err_t err;
+    err = nvs_flash_init();
+
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(err);
+
+    wifi_init_sta();
+
+    while (1)
+    {
+        delayMs(1);
+    }
+}
+
+#endif

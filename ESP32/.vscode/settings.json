@@ -18,6 +18,7 @@
     "xtree": "c",
     "xutility": "c",
     "future": "c",
-    "mutex": "c"
+    "mutex": "c",
+    "sstream": "c"
   }
 }
