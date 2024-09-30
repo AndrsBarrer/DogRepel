@@ -28,7 +28,6 @@ const getStationByMac = async (mac) => {
 
 const createStationByMac = async (mac) => {
   try {
-    console.log(mac);
     await db.query("INSERT INTO stations (mac) VALUES (?)", [mac]);
   } catch (error) {
     console.log("Could not create station: ", error);
@@ -41,7 +40,6 @@ const getDogVisits = async () => {
 
 const createDogVisit = async (station_mac, collar_mac) => {
   try {
-    console.log(station_mac, " ", collar_mac);
     let [results] = await db.query("SELECT dog_id FROM dogs WHERE mac = ?", [
       collar_mac,
     ]);

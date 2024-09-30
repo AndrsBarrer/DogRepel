@@ -26,7 +26,6 @@ const getDogByMac = async (mac) => {
 
 const createDogByMac = async (mac) => {
   try {
-    console.log(mac);
     await db.query("INSERT INTO dogs (mac) VALUES (?)", [mac]);
   } catch (error) {
     console.log("Could not create dog.");
