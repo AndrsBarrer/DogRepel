@@ -26,7 +26,6 @@ async function fetchDogVisits() {
       new Date(visit.visit_time).getHours()
     );
     const visitDistances = dogVisits.map((visit) => visit.distance);
-
     // Set the chart data based on fetched visits
     chartData.value = {
       labels: visitTimes, // Time in hours for x-axis

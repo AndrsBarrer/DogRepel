@@ -2,30 +2,11 @@
 <template>
   <main>
     <div class="page-container">
-      <!-- <div class="row1">
-        <MenuComponent @selectedMenuItem="changeMenu"></MenuComponent>
-      </div> -->
-      <!-- <div v-if="currentMenuItem === 'Dashboard'">
-        <ChartComponent />
-
-        <div class="row2-edit">
-          <EditDogsTable />
-          <EditStationsTable />
-        </div>
-      </div> -->
-
       <ChartComponent />
       <div class="tables">
         <EditDogsTable />
         <EditStationsTable />
       </div>
-
-      <!-- <div class="row2-register" v-if="currentMenuItem === 'Register'">
-        <RegisterDog />
-        <RegisterStation />
-      </div>
-
-      <h1 v-if="currentMenuItem === 'Settings'">Settings will show here</h1> -->
     </div>
   </main>
 </template>
