@@ -2,10 +2,11 @@ const express = require("express");
 const router = express.Router();
 const mysql = require("mysql2");
 const db = require("../db"); // Import the centralized DB connection
+const stationService = require("../services/stationService");
 
 router.get("/", async (req, res) => {
   try {
-    const [results] = await db.query("SELECT * FROM stations");
+    const [results] = await stationService.getAllStations();
     res.status(200).json({
       message: "Succesfully returned results.",
       results: results,
@@ -19,7 +20,7 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { location } = req.body;
-    let query = "INSERT INTO stations (location) VALUES (?)";
+    let query = await stationService.insertStation();
     const [result] = await db.query(query, [location]);
     res.status(200).json({
       message: "Succesfully inserted values.",
@@ -35,7 +36,7 @@ router.post("/", async (req, res) => {
 router.put("/", async (req, res) => {
   try {
     const { station_id, location } = req.body;
-    let query = "UPDATE stations SET location = ? WHERE station_id = ?";
+    let query = await stationService.updateStation();
     const [result] = await db.query(query, [location, station_id]);
     res.status(200).json({
       message: "Succesfully updated values.",

@@ -2,36 +2,14 @@ const express = require("express");
 const router = express.Router();
 const mysql = require("mysql2");
 const db = require("../db"); // Import the centralized DB connection
+const dogService = require("../services/dogService");
 
 const isNumber = (value) => Number.isFinite(value);
-
-const isFloat = (value) => {
-  return Number(value) === value && value % 1 !== 0;
-};
-
-// Function to upload message to the MySQL database
-const uploadMessage = async (message) => {
-  try {
-    var msg = message.split(":");
-    const dog_id = msg[1];
-    const station_id = msg[2];
-    const distance = msg[3];
-
-    //DogRepel:DogID:StationID:Distance:Comment
-    let query =
-      "INSERT INTO dog_visits (dog_id, station_id, distance) VALUES (?, ?, ?)";
-
-    const [result] = db.query(query, [dog_id, station_id, distance]);
-    console.log(error);
-  } catch (error) {
-    console.log(error);
-  }
-};
 
 // Define routes for handling API requests
 router.get("/", async (req, res) => {
   try {
-    const [results] = await db.query("SELECT * FROM dogs");
+    const [results] = await dogService.getAllDogs();
     res.status(200).json({
       message: "Succesfully returned results.",
       results: results,
@@ -58,8 +36,7 @@ router.post("/", async (req, res) => {
     }
 
     try {
-      const query = "INSERT INTO dogs (name, breed, age) VALUES (?, ?, ?)";
-      const [result] = await db.query(query, [name, breed, ageNumber]);
+      const [result] = await dogService.insertDog(name, breed, ageNumber);
 
       res.status(200).json({
         message: "Successfully inserted values.",
@@ -83,8 +60,7 @@ router.post("/", async (req, res) => {
 router.put("/", async (req, res) => {
   const { dog_id, name, breed, age } = req.body;
   try {
-    let query = "UPDATE dogs SET name = ?, breed = ?, age = ? WHERE dog_id = ?";
-    const [result] = await db.query(query, [name, breed, age, dog_id]);
+    const [result] = await dogService.updateDog(dog_id, name, breed, age);
     res.status(200).json({
       message: "Succesfully updated values.",
       result: result,
@@ -229,5 +205,4 @@ router.put("/dog_visits", async (req, res) => {
 // Export the router and the uploadMessage function for UDP usage
 module.exports = {
   router,
-  uploadMessage,
 };
