@@ -10,7 +10,7 @@ const insertStation = async (location) => {
   return await db.query(query, [location]);
 };
 
-const updateStation = async (location, station_id) => {
+const updateStation = async (station_id, location) => {
   const query = "UPDATE stations SET location = ? WHERE station_id = ?";
   return await db.query(query, [location, station_id]);
 };

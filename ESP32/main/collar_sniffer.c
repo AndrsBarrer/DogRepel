@@ -1,6 +1,6 @@
 
-// #define COLLAR_CODE
-#define STATION_CODE
+#define COLLAR_CODE
+// #define STATION_CODE
 
 /*
 Todo:
@@ -611,17 +611,13 @@ char **tokenizeString(char *str, const char *delim)
 #endif
 
 #ifdef COLLAR_CODE
+
+#include "esp_pm.h"
 /* STA Configuration */
 #define WIFI_STA_SSID "Dog_Repel"
 #define WIFI_STA_PASSWD "123456789"
 #define ESP_MAXIMUM_RETRY 5
 #define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA2_PSK
-
-/* The event group allows multiple bits for each event, but we only care about two events:
- * - we are connected to the AP with an IP
- * - we failed to connect after the maximum amount of retries */
-#define WIFI_CONNECTED_BIT BIT0
-#define WIFI_FAIL_BIT BIT1
 
 static const char *TAG_AP = "WiFi SoftAP";
 static const char *TAG_STA = "WiFi Station";
@@ -633,7 +629,6 @@ float ADC1_Ch3_Read(void);
 float ADC1_Ch3_Read_mV(void);
 bool handleDeviceCommand(char **tokens, char *tx_buffer, size_t sizeBuffer);
 bool handleWifiMessages(char **tokens, char *tx_buffer, size_t sizeBuffer);
-
 void delayMs(uint16_t ms);
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base,
@@ -641,40 +636,21 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
 
 void wifi_init_softap(void);
 void wifi_init_sta(void);
-static int s_retry_num = 0;
-
-/* FreeRTOS event group to signal when we are connected/disconnected */
-static EventGroupHandle_t s_wifi_event_group;
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                int32_t event_id, void *event_data)
 {
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STACONNECTED)
-    {
-        wifi_event_ap_staconnected_t *event = (wifi_event_ap_staconnected_t *)event_data;
-        // ESP_LOGI(TAG_AP, "Station " MACSTR " joined, AID=%d",MAC2STR(event->mac), event->aid);
-    }
-    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_AP_STADISCONNECTED)
-    {
-        wifi_event_ap_stadisconnected_t *event = (wifi_event_ap_stadisconnected_t *)event_data;
-        // ESP_LOGI(TAG_AP, "Station " MACSTR " left, AID=%d", MAC2STR(event->mac), event->aid);
-    }
-    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
+
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
     {
         esp_wifi_connect();
         ESP_LOGI(TAG_STA, "Station started");
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
-        ESP_LOGI(TAG_STA, "Disconnected from Wi-Fi, trying to reconnect...");
+        ESP_LOGI(TAG_STA, "Sending out probe request.");
+        delayMs(5000);
         esp_wifi_connect();
-    }
-    else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
-    {
-        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-        ESP_LOGI(TAG_STA, "Got IP:" IPSTR, IP2STR(&event->ip_info.ip));
-        // s_retry_num = 0;
-        // xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
 }
 
@@ -698,7 +674,7 @@ void wifi_init_sta(void)
         .sta = {
             .ssid = WIFI_STA_SSID,
             .password = WIFI_STA_PASSWD,
-            .scan_method = WIFI_ALL_CHANNEL_SCAN,
+            .scan_method = WIFI_FAST_SCAN, // this is used to save battery
             .failure_retry_cnt = ESP_MAXIMUM_RETRY,
             .threshold.authmode = ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD,
             .sae_pwe_h2e = WPA3_SAE_PWE_BOTH,
@@ -730,6 +706,24 @@ void app_main(void)
         err = nvs_flash_init();
     }
     ESP_ERROR_CHECK(err);
+
+    esp_pm_config_t power_cfg = {
+        .max_freq_mhz = 80,
+        .min_freq_mhz = 80,
+        .light_sleep_enable = false,
+    };
+
+    esp_err_t result = esp_pm_configure((const void *)&power_cfg);
+    if (result != ESP_OK)
+    {
+        ESP_LOGE("PM", "[X] Failed to configure power management: %s", esp_err_to_name(result));
+    }
+
+    // Configure the LED pin as output
+    gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
+
+    // Turn off the LED (set to HIGH)
+    gpio_set_level(LED_PIN, 1); // Active LOW LED, so set HIGH to turn it off
 
     wifi_init_sta();
 

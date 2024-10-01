@@ -36,8 +36,7 @@ router.post("/", async (req, res) => {
 router.put("/", async (req, res) => {
   try {
     const { station_id, location } = req.body;
-    let query = await stationService.updateStation();
-    const [result] = await db.query(query, [location, station_id]);
+    let [result] = await stationService.updateStation(station_id, location);
     res.status(200).json({
       message: "Succesfully updated values.",
       result: result,

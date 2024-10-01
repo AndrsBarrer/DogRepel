@@ -22,12 +22,6 @@ import RegisterStation from "../components/RegisterStation.vue";
 import DataTableComponent from "../components/DataTableComponent.vue";
 import EditDogsTable from "../components/EditDogsTable.vue";
 import EditStationsTable from "../components/EditStationsTable.vue";
-
-const currentMenuItem = ref("Dashboard");
-
-const changeMenu = (payload) => {
-  currentMenuItem.value = payload;
-};
 </script>
 
 <style scoped>
