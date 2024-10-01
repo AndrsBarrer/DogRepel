@@ -10,6 +10,7 @@ const stationRoutes = require("./routes/stations");
 
 const dogService = require("./services/dogService");
 const stationService = require("./services/stationService");
+const { measureMemory } = require("vm");
 
 port = 2222;
 const host = "192.168.0.28";
@@ -63,9 +64,10 @@ const uploadMessage = async (message) => {
   try {
     console.log("[+] Uploading new event.");
     // EVENT-CC:7B:5C:35:6D:B4-CC:DB:A7:5A:56:D4
-    var msg = String(message).split("-");
+    var msg = String(message).split("/");
     const station_mac = msg[1];
     const collar_mac = msg[2];
+    const rssi = Number(msg[3]);
 
     let stationResults = await stationService.getStationByMac(station_mac);
     if (stationResults.length == 0) {
@@ -79,7 +81,7 @@ const uploadMessage = async (message) => {
     }
 
     // Add the event to db
-    await stationService.createDogVisit(station_mac, collar_mac);
+    await stationService.createDogVisit(station_mac, collar_mac, rssi);
   } catch (error) {
     console.log(error);
   }

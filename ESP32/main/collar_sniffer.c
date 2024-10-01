@@ -1,6 +1,6 @@
 
-#define COLLAR_CODE
-// #define STATION_CODE
+// #define COLLAR_CODE
+#define STATION_CODE
 
 /*
 Todo:
@@ -110,6 +110,7 @@ void formatMAC2STR(uint8_t mac[6], char *returnMACstr);
 static char got_collar_mac[18] = {0};
 static uint8_t station_mac_addr[6] = {0};
 static char station_mac_addr_str[20] = {0};
+static int8_t currentRSSI = 0;
 
 void app_main(void)
 {
@@ -333,6 +334,9 @@ static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t 
                     // Format the MAC to a string so it can be printed and sent to the server as a string
                     formatMAC2STR(mac_address, mac_string);
 
+                    // Save the RSSI so it can be sent to the server
+                    currentRSSI = packet->rx_ctrl.rssi;
+
                     // Log the info obtained
                     ESP_LOGI(TAG, "[!] MAC Address: %s", mac_string);
                     ESP_LOGI(TAG, "[!] RSSI: %d", packet->rx_ctrl.rssi);
@@ -448,12 +452,12 @@ static void tcp_client_task(void *pvParameters)
             if (strlen(got_collar_mac) > 0)
             {
                 // Make sure to also send the station MAC along with the collar MAC
-                snprintf(tx_buffer, sizeof(tx_buffer), "EVENT-%s-%s", station_mac_addr_str, got_collar_mac);
+                snprintf(tx_buffer, sizeof(tx_buffer), "EVENT/%s/%s/%d", station_mac_addr_str, got_collar_mac, currentRSSI);
                 err = send(sock, tx_buffer, strlen(tx_buffer), 0);
 
                 // Clear the value so that it only sends once
                 memset(got_collar_mac, 0, sizeof(got_collar_mac));
-
+                currentRSSI = 0;
                 if (err < 0)
                 {
                     ESP_LOGE(TAG, "Error occured during sending: errno %d", errno);
@@ -718,12 +722,6 @@ void app_main(void)
     {
         ESP_LOGE("PM", "[X] Failed to configure power management: %s", esp_err_to_name(result));
     }
-
-    // Configure the LED pin as output
-    gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
-
-    // Turn off the LED (set to HIGH)
-    gpio_set_level(LED_PIN, 1); // Active LOW LED, so set HIGH to turn it off
 
     wifi_init_sta();
 

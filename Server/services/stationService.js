@@ -38,7 +38,7 @@ const getDogVisits = async () => {
   return await db.query("SELECT * FROM dog_visits");
 };
 
-const createDogVisit = async (station_mac, collar_mac) => {
+const createDogVisit = async (station_mac, collar_mac, distance) => {
   try {
     let [results] = await db.query("SELECT dog_id FROM dogs WHERE mac = ?", [
       collar_mac,
@@ -51,10 +51,10 @@ const createDogVisit = async (station_mac, collar_mac) => {
     );
     const station_id = results[0].station_id;
 
-    await db.query("INSERT INTO dog_visits (dog_id, station_id) VALUES (?,?)", [
-      dog_id,
-      station_id,
-    ]);
+    await db.query(
+      "INSERT INTO dog_visits (dog_id, station_id, distance) VALUES (?,?,?)",
+      [dog_id, station_id, distance]
+    );
   } catch (error) {
     console.log("Could not create event: ", error);
   }
