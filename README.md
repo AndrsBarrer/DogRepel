@@ -1,6 +1,6 @@
 # Dog Behavior Tracking System with ESP32
 
-![Project Image](images/Architecture.jpg)
+![Project Image](Architecture.jpg)
 
 This project tracks dog behavior using ESP32 devices to measure proximity between dogs (wearing collars with ESP32s) and Wi-Fi stations. Data is logged into a server for visualization on a web interface.
 
