@@ -70,7 +70,10 @@ static bool runTCPtask = false;
 #define MAC_STR_LEN 18
 
 // Used to connect to TCP server
-#define HOST_IP_ADDR "192.168.0.28"
+// #define HOST_IP_ADDR "192.168.0.28"
+// Resolve server IP address via UDP broadcast
+#define IP_ADDR_STR_LEN 20
+char server_ip[IP_ADDR_STR_LEN];
 #define PORT 2222
 
 #define MNGMT_PROBE_MASK 0x00F0
@@ -114,6 +117,96 @@ static uint8_t station_mac_addr[6] = {0};
 static char station_mac_addr_str[20] = {0};
 static int8_t currentRSSI = 0;
 
+// Function to resolve server IP using UDP broadcast
+#define UDP_PORT 12345
+#define MAX_RECEIVE_BUFFER_SIZE 128
+
+#define BROADCAST_INTERVAL_MS 5000 // 5 seconds between retries
+#define RECEIVE_TIMEOUT_MS 2000    // 2 seconds timeout for receiving
+static void resolve_server_ip(char *host_ip, size_t ip_size)
+{
+    struct sockaddr_in broadcast_addr, source_addr;
+    int udp_sock;
+    char *message = "DISCOVER_SERVER";
+    char receive_buffer[MAX_RECEIVE_BUFFER_SIZE];
+    socklen_t addr_len = sizeof(source_addr);
+    struct timeval timeout;
+    int len;
+
+    // Create a UDP socket
+    while (1)
+    {
+        udp_sock = socket(AF_INET, SOCK_DGRAM, 0);
+        if (udp_sock < 0)
+        {
+            ESP_LOGE(TAG, "Unable to create UDP socket: errno %d", errno);
+            vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
+            continue;
+        }
+
+        // Set the broadcast option
+        int broadcast_enable = 1;
+        if (setsockopt(udp_sock, SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable)) < 0)
+        {
+            ESP_LOGE(TAG, "setsockopt failed: errno %d", errno);
+            close(udp_sock);
+            vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
+            continue;
+        }
+
+        // Set receive timeout
+        timeout.tv_sec = 0;
+        timeout.tv_usec = RECEIVE_TIMEOUT_MS * 1000; // Set timeout to 2 seconds
+        if (setsockopt(udp_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
+        {
+            ESP_LOGE(TAG, "setsockopt for timeout failed: errno %d", errno);
+            close(udp_sock);
+            vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
+            continue;
+        }
+
+        // Set up broadcast address
+        memset(&broadcast_addr, 0, sizeof(broadcast_addr));
+        broadcast_addr.sin_family = AF_INET;
+        broadcast_addr.sin_port = htons(UDP_PORT);
+        broadcast_addr.sin_addr.s_addr = inet_addr("255.255.255.255");
+
+        // Send the broadcast message
+        if (sendto(udp_sock, message, strlen(message), 0, (struct sockaddr *)&broadcast_addr, sizeof(broadcast_addr)) < 0)
+        {
+            ESP_LOGE(TAG, "Error sending broadcast: errno %d", errno);
+            close(udp_sock);
+            vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
+            continue;
+        }
+        ESP_LOGI(TAG, "Broadcast sent");
+
+        // Wait for the server's response
+        len = recvfrom(udp_sock, receive_buffer, sizeof(receive_buffer) - 1, 0, (struct sockaddr *)&source_addr, &addr_len);
+        if (len < 0)
+        {
+            ESP_LOGE(TAG, "recvfrom failed or timed out: errno %d", errno);
+            close(udp_sock);
+            vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
+            continue;
+        }
+
+        // Null-terminate the received data
+        receive_buffer[len] = 0;
+
+        // Log the received IP address and message
+        ESP_LOGI(TAG, "Received from %s: %s", inet_ntoa(source_addr.sin_addr), receive_buffer);
+
+        // Store the server's IP address
+        strncpy(host_ip, inet_ntoa(source_addr.sin_addr), ip_size);
+        host_ip[ip_size - 1] = '\0'; // Ensure null termination
+
+        // Close the UDP socket
+        close(udp_sock);
+        break; // Exit the loop once the server's IP is received
+    }
+}
+
 void app_main(void)
 {
 
@@ -129,6 +222,9 @@ void app_main(void)
 
     ESP_LOGI(TAG, "[+] Initializing ESP in Station Mode");
     wifi_init_sta();
+
+    resolve_server_ip(server_ip, sizeof(server_ip));
+    ESP_LOGI(TAG, "Server IP resolved: %s", server_ip);
 
     ESP_LOGI(TAG, "[+] Starting sniffing task...");
     xTaskCreate(&sniffer_task, "sniffer_task", 10000, NULL, 1, NULL);
@@ -386,95 +482,6 @@ void delayMs(uint16_t ms)
     vTaskDelay(ms / portTICK_PERIOD_MS);
 }
 
-#define UDP_PORT 12345
-#define MAX_RECEIVE_BUFFER_SIZE 128
-
-#define BROADCAST_INTERVAL_MS 5000 // 5 seconds between retries
-#define RECEIVE_TIMEOUT_MS 2000    // 2 seconds timeout for receiving
-static void resolve_server_ip(char *host_ip, size_t ip_size)
-{
-    struct sockaddr_in broadcast_addr, source_addr;
-    int udp_sock;
-    char *message = "DISCOVER_SERVER";
-    char receive_buffer[MAX_RECEIVE_BUFFER_SIZE];
-    socklen_t addr_len = sizeof(source_addr);
-    struct timeval timeout;
-    int len;
-
-    // Create a UDP socket
-    while (1)
-    {
-        udp_sock = socket(AF_INET, SOCK_DGRAM, 0);
-        if (udp_sock < 0)
-        {
-            ESP_LOGE(TAG, "Unable to create UDP socket: errno %d", errno);
-            vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
-            continue;
-        }
-
-        // Set the broadcast option
-        int broadcast_enable = 1;
-        if (setsockopt(udp_sock, SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable)) < 0)
-        {
-            ESP_LOGE(TAG, "setsockopt failed: errno %d", errno);
-            closesocket(udp_sock);
-            vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
-            continue;
-        }
-
-        // Set receive timeout
-        timeout.tv_sec = 0;
-        timeout.tv_usec = RECEIVE_TIMEOUT_MS * 1000; // Set timeout to 2 seconds
-        if (setsockopt(udp_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
-        {
-            ESP_LOGE(TAG, "setsockopt for timeout failed: errno %d", errno);
-            closesocket(udp_sock);
-            vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
-            continue;
-        }
-
-        // Set up broadcast address
-        memset(&broadcast_addr, 0, sizeof(broadcast_addr));
-        broadcast_addr.sin_family = AF_INET;
-        broadcast_addr.sin_port = htons(UDP_PORT);
-        broadcast_addr.sin_addr.s_addr = inet_addr("255.255.255.255");
-
-        // Send the broadcast message
-        if (sendto(udp_sock, message, strlen(message), 0, (struct sockaddr *)&broadcast_addr, sizeof(broadcast_addr)) < 0)
-        {
-            ESP_LOGE(TAG, "Error sending broadcast: errno %d", errno);
-            closesocket(udp_sock);
-            vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
-            continue;
-        }
-        ESP_LOGI(TAG, "Broadcast sent");
-
-        // Wait for the server's response
-        len = recvfrom(udp_sock, receive_buffer, sizeof(receive_buffer) - 1, 0, (struct sockaddr *)&source_addr, &addr_len);
-        if (len < 0)
-        {
-            ESP_LOGE(TAG, "recvfrom failed or timed out: errno %d", errno);
-            closesocket(udp_sock);
-            vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
-            continue;
-        }
-
-        // Null-terminate the received data
-        receive_buffer[len] = 0;
-
-        // Log the received IP address and message
-        ESP_LOGI(TAG, "Received from %s: %s", inet_ntoa(source_addr.sin_addr), receive_buffer);
-
-        // Store the server's IP address
-        strncpy(host_ip, inet_ntoa(source_addr.sin_addr), ip_size);
-        host_ip[ip_size - 1] = '\0'; // Ensure null termination
-
-        // Close the UDP socket
-        closesocket(udp_sock);
-        break; // Exit the loop once the server's IP is received
-    }
-}
-
 /*
 TCP task will:
 - communicate events (send MAC of device to server)
@@ -487,7 +494,7 @@ static void tcp_client_task(void *pvParameters)
 {
     char rx_buffer[128];
     char tx_buffer[128];
-    char host_ip[] = HOST_IP_ADDR;
+    // char host_ip[] = HOST_IP_ADDR;
     // char host_ip[16]; // Buffer to store resolved IP
     int addr_family = 0;
     int ip_protocol = 0;
@@ -507,7 +514,7 @@ static void tcp_client_task(void *pvParameters)
         // }
 
         struct sockaddr_in dest_addr;
-        dest_addr.sin_addr.s_addr = inet_addr(host_ip);
+        dest_addr.sin_addr.s_addr = inet_addr(server_ip);
 
         dest_addr.sin_family = AF_INET;
         dest_addr.sin_port = htons(PORT);
@@ -532,7 +539,8 @@ static void tcp_client_task(void *pvParameters)
         setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout);
         setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof timeout);
 
-        ESP_LOGI(TAG, "[!] Connecting to %s:%d", host_ip, PORT);
+        // ESP_LOGI(TAG, "[!] Connecting to %s:%d", host_ip, PORT);
+        ESP_LOGI(TAG, "[!] Connecting to %s:%d", server_ip, PORT);
 
         int err = connect(sock, (struct sockaddr *)&dest_addr, sizeof(struct sockaddr_in));
         if (err != 0)
@@ -573,7 +581,7 @@ static void tcp_client_task(void *pvParameters)
             if (len > 0)
             {
                 rx_buffer[len] = '\0'; // Null-terminate whatever we received and treat like a string
-                ESP_LOGI(TAG, "Received %d bytes from %s: %s", len, host_ip, rx_buffer);
+                ESP_LOGI(TAG, "Received %d bytes from %s: %s", len, server_ip, rx_buffer);
 
                 // Pass what was received to be handled
                 handleDeviceCommand(rx_buffer);

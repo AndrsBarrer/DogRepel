@@ -3,6 +3,7 @@ const net = require("net");
 const cors = require("cors");
 const os = require("os");
 const express_app = express();
+const dgram = require("dgram"); // Import dgram for UDP
 
 // Import dog API endpoints
 const { router: dogRoutes } = require("./routes/dogs");
@@ -10,18 +11,41 @@ const stationRoutes = require("./routes/stations");
 
 const dogService = require("./services/dogService");
 const stationService = require("./services/stationService");
-const { measureMemory } = require("vm");
 
 port = 2222;
-const host = "192.168.0.28";
 
 const Express_tag = "Express: ";
 const expressPort = 4000;
+const udpPort = 2222; // UDP port to listen for broadcast messages
+const host = "0.0.0.0"; // Listen on all interfaces
 
 express_app.use(express.json()); // Middleware to parse JSON
 express_app.use(cors()); // Enable CORS for requests from the Vue frontend
 express_app.use("/api/dogs", dogRoutes); // Mount dog routes
 express_app.use("/api/stations", stationRoutes); // Mount station routes
+
+// Create UDP server
+const socket = dgram.createSocket("udp4");
+
+socket.on("listening", function () {
+  const address = socket.address();
+  console.log(
+    "UDP socket listening on " + address.address + ":" + address.port
+  );
+});
+
+socket.on("message", function (message, remote) {
+  console.log(
+    "[!] UDP Server received:",
+    remote.address + ":" + remote.port + " - " + message
+  );
+
+  if (message.toString() === "DISCOVER_SERVER") {
+    const response = "Server ACK.";
+    socket.send(response, 0, response.length, remote.port, remote.address);
+  }
+});
+socket.bind("12345");
 
 const server = net.createServer();
 server.listen(port, host, () => {

@@ -12,8 +12,6 @@ import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
 
 import Aura from "@primevue/themes/aura";
-import Lara from "@primevue/themes/lara";
-import Nora from "@primevue/themes/nora";
 import "primeicons/primeicons.css"; // PrimeIcons CSS
 
 const app = createApp(App);
