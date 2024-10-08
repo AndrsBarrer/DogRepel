@@ -1,6 +1,6 @@
 
-// #define COLLAR_CODE
-#define STATION_CODE
+#define COLLAR_CODE
+// #define STATION_CODE
 
 /*
 Todo:
@@ -36,8 +36,6 @@ Collar code:
 
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
-
-#include "mdns.h"
 
 #ifdef STATION_CODE
 /* --- Some configurations --- */
@@ -729,6 +727,7 @@ char **tokenizeString(char *str, const char *delim)
 #ifdef COLLAR_CODE
 
 #include "esp_pm.h"
+#include "esp_sleep.h"
 /* STA Configuration */
 #define WIFI_STA_SSID "Dog_Repel"
 #define WIFI_STA_PASSWD "123456789"
@@ -765,8 +764,9 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
         ESP_LOGI(TAG_STA, "Sending out probe request.");
-        delayMs(5000);
+
         esp_wifi_connect();
+        esp_deep_sleep_start();
     }
 }
 
@@ -826,7 +826,7 @@ void app_main(void)
     esp_pm_config_t power_cfg = {
         .max_freq_mhz = 80,
         .min_freq_mhz = 80,
-        .light_sleep_enable = false,
+        .light_sleep_enable = true,
     };
 
     esp_err_t result = esp_pm_configure((const void *)&power_cfg);
@@ -836,7 +836,7 @@ void app_main(void)
     }
 
     wifi_init_sta();
-
+    esp_sleep_enable_timer_wakeup(5 * 1000000); // added 5 second sleep
     while (1)
     {
         delayMs(1);
