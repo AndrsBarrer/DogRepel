@@ -1,6 +1,6 @@
 
-#define COLLAR_CODE
-// #define STATION_CODE
+// #define COLLAR_CODE
+#define STATION_CODE
 
 /*
 Todo:
@@ -36,6 +36,8 @@ Collar code:
 
 #include "lwip/sockets.h"
 #include "lwip/netdb.h"
+
+#include "collar_sniffer.h"
 
 #ifdef STATION_CODE
 /* --- Some configurations --- */
@@ -121,6 +123,10 @@ static int8_t currentRSSI = 0;
 
 #define BROADCAST_INTERVAL_MS 5000 // 5 seconds between retries
 #define RECEIVE_TIMEOUT_MS 2000    // 2 seconds timeout for receiving
+
+// Declare a semaphore to control task execution
+SemaphoreHandle_t xSemaphore;
+
 static void resolve_server_ip(char *host_ip, size_t ip_size)
 {
     struct sockaddr_in broadcast_addr, source_addr;
@@ -205,6 +211,25 @@ static void resolve_server_ip(char *host_ip, size_t ip_size)
     }
 }
 
+// Prepare and set configuration of timer that will be used by LED Controller
+ledc_timer_config_t ledc_timer = {
+    .duty_resolution = LEDC_TIMER_1_BIT, // 1-bit resolution (on/off only)
+    .freq_hz = 25000,                    // 25kHz frequency for the transducer
+    .speed_mode = LEDC_HIGH_SPEED_MODE,  // High-speed mode
+    .timer_num = LEDC_HS_TIMER,          // High-speed timer
+    .clk_cfg = LEDC_AUTO_CLK             // Auto-select the source clock
+};
+
+// Prepare individual configuration for each channel of LED Controller
+ledc_channel_config_t ledc_channel = {
+    .channel = LEDC_HS_CH0_CHANNEL,
+    .duty = 1,                          // Duty cycle set to 1 for 1-bit resolution (on)
+    .gpio_num = LEDC_HS_CH0_GPIO,       // GPIO pin connected to the transducer
+    .speed_mode = LEDC_HIGH_SPEED_MODE, // High-speed mode
+    .hpoint = 0,                        // High point set to 0
+    .timer_sel = LEDC_HS_TIMER          // Using high-speed timer
+};
+
 void app_main(void)
 {
 
@@ -224,12 +249,66 @@ void app_main(void)
     resolve_server_ip(server_ip, sizeof(server_ip));
     ESP_LOGI(TAG, "Server IP resolved: %s", server_ip);
 
+    // Set configuration of timer0 for high speed channels
+    ledc_timer_config(&ledc_timer);
+
+    // Prepare and set configuration of timer1 for low speed channels
+    ledc_timer.speed_mode = LEDC_HS_MODE;
+    ledc_timer.timer_num = LEDC_HS_TIMER;
+    ledc_timer_config(&ledc_timer);
+
+    // Set LED Controller with previously prepared configuration
+    ledc_channel_config(&ledc_channel);
+
+    // Initialize fade service.
+    ledc_fade_func_install(0);
+
+    // Initialize the semaphore as "available" (binary semaphore)
+    xSemaphore = xSemaphoreCreateBinary();
+    xSemaphoreGive(xSemaphore); // Set it to available initially
+
     ESP_LOGI(TAG, "[+] Starting sniffing task...");
     xTaskCreate(&sniffer_task, "sniffer_task", 10000, NULL, 1, NULL);
 
     while (RUNNING)
     {
         delayMs(1);
+    }
+}
+
+// Define the task
+void led_duty_task(void *param)
+{
+    // Set the duty cycle to 4000
+    ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 1);
+    ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
+
+    // Keep the duty cycle at 4000 for 5 seconds
+    vTaskDelay(pdMS_TO_TICKS(5000));
+
+    // Turn off the duty cycle (set to 0)
+    ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 0);
+    ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
+
+    // Release the semaphore once the task completes
+    xSemaphoreGive(xSemaphore);
+
+    // Delete the task after it's done
+    vTaskDelete(NULL);
+}
+
+void start_led_task()
+{
+    // Try to take the semaphore
+    if (xSemaphoreTake(xSemaphore, (TickType_t)0) == pdTRUE)
+    {
+        // Create the task if the semaphore was successfully taken
+        xTaskCreate(led_duty_task, "led_duty_task", 2048, NULL, 5, NULL);
+    }
+    else
+    {
+        // Task is already running, do nothing
+        printf("Task is already running, skipping creation.\n");
     }
 }
 
@@ -406,44 +485,52 @@ static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t 
                 // If it's okay to process the packet
                 if (can_process)
                 {
-                    if (current_mac_index < MAX_DEVICES)
+                    // If the RSSI is =< allowed
+                    ESP_LOGI(TAG, "rssi: %d", packet->rx_ctrl.rssi);
+                    if ((int8_t)packet->rx_ctrl.rssi >= (int8_t)-50)
                     {
-                        // First check if the mac already is in the list and update the timestamp value
-                        for (int i = 0; i < current_mac_index; i++)
+
+                        if (current_mac_index < MAX_DEVICES)
                         {
-                            if (!memcmp(mac_address, mac_list[i].mac, 6))
+                            // First check if the mac already is in the list and update the timestamp value
+                            for (int i = 0; i < current_mac_index; i++)
                             {
-                                // ESP_LOGI(TAG, "[!] Updated mac in list with timestamp: %ld", current_timestamp);
-                                mac_list[i].last_time_received = current_timestamp;
-                                mac_found = true;
+                                if (!memcmp(mac_address, mac_list[i].mac, 6))
+                                {
+                                    // ESP_LOGI(TAG, "[!] Updated mac in list with timestamp: %ld", current_timestamp);
+                                    mac_list[i].last_time_received = current_timestamp;
+                                    mac_found = true;
+                                }
+                            }
+
+                            // If the MAC was not found in the list, add it to the list
+                            if (!mac_found)
+                            {
+                                memcpy(mac_list[current_mac_index].mac, mac_address, 6);
+                                mac_list[current_mac_index].last_time_received = current_timestamp;
+                                current_mac_index++;
                             }
                         }
+                        // Trigger the transducer to turn on
+                        start_led_task();
 
-                        // If the MAC was not found in the list, add it to the list
-                        if (!mac_found)
-                        {
-                            memcpy(mac_list[current_mac_index].mac, mac_address, 6);
-                            mac_list[current_mac_index].last_time_received = current_timestamp;
-                            current_mac_index++;
-                        }
+                        // Format the MAC to a string so it can be printed and sent to the server as a string
+                        formatMAC2STR(mac_address, mac_string);
+
+                        // Save the RSSI so it can be sent to the server
+                        currentRSSI = packet->rx_ctrl.rssi;
+
+                        // Log the info obtained
+                        ESP_LOGI(TAG, "[!] MAC Address: %s", mac_string);
+                        ESP_LOGI(TAG, "[!] RSSI: %d", packet->rx_ctrl.rssi);
+                        ESP_LOGI(TAG, "[!] SSID: %.*s\n\n", ssid_len, ssid);
+
+                        // Save the stored MAC so that the TCP task can send a message
+                        strcpy(got_collar_mac, mac_string);
+
+                        // Print all of the available stored MAC addresses
+                        printMACS(mac_list, current_mac_index);
                     }
-
-                    // Format the MAC to a string so it can be printed and sent to the server as a string
-                    formatMAC2STR(mac_address, mac_string);
-
-                    // Save the RSSI so it can be sent to the server
-                    currentRSSI = packet->rx_ctrl.rssi;
-
-                    // Log the info obtained
-                    ESP_LOGI(TAG, "[!] MAC Address: %s", mac_string);
-                    ESP_LOGI(TAG, "[!] RSSI: %d", packet->rx_ctrl.rssi);
-                    ESP_LOGI(TAG, "[!] SSID: %.*s\n\n", ssid_len, ssid);
-
-                    // Save the stored MAC so that the TCP task can send a message
-                    strcpy(got_collar_mac, mac_string);
-
-                    // Print all of the available stored MAC addresses
-                    printMACS(mac_list, current_mac_index);
                 }
             }
         }
