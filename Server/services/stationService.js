@@ -22,7 +22,7 @@ const getStationByMac = async (mac) => {
     ]);
     return results;
   } catch (error) {
-    console.log("Dog does not exist.");
+    console.log("Error: ", error);
   }
 };
 

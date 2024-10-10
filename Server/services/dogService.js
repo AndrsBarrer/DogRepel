@@ -20,7 +20,7 @@ const getDogByMac = async (mac) => {
     const [results] = await db.query("SELECT * FROM dogs WHERE mac = ?", [mac]);
     return results;
   } catch (error) {
-    console.log("Dog does not exist.");
+    console.log("Error: ", error);
   }
 };
 
@@ -28,7 +28,7 @@ const createDogByMac = async (mac) => {
   try {
     await db.query("INSERT INTO dogs (mac) VALUES (?)", [mac]);
   } catch (error) {
-    console.log("Could not create dog.");
+    console.log("Error: ", error);
   }
 };
 module.exports = {
