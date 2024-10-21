@@ -21,6 +21,12 @@
         </template>
       </Column>
 
+      <Column field="distance" header="Distance" style="width: 10%">
+        <template #editor="{ data, field }">
+          <InputText v-model="data[field]" fluid />
+        </template>
+      </Column>
+
       <Column
         :rowEditor="true"
         style="width: 5%; min-width: 8rem"

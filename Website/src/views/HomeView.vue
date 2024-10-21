@@ -3,9 +3,12 @@
   <main>
     <div class="page-container">
       <ChartComponent />
-      <div class="tables">
-        <EditDogsTable />
-        <EditStationsTable />
+
+      <div class="tables-wrapper">
+        <div class="tables">
+          <EditDogsTable />
+          <EditStationsTable />
+        </div>
       </div>
     </div>
   </main>
@@ -32,31 +35,22 @@ main {
   display: flex;
   flex-direction: column;
 
+  .tables-wrapper {
+    margin: 0 2rem; /* Apply margin to the wrapper */
+  }
+
   .tables {
     display: flex;
     width: 100%;
-    gap: 4rem;
+    gap: 2rem;
     flex-direction: row;
     justify-content: center;
 
     /* Ensure each child div (e.g., EditDogsTable and EditStationsTable) takes up 50% of the container */
     & > div {
-      /* flex: 1 1 50%:
-         - 1 (grow): allows the div to grow if there is extra space
-         - 1 (shrink): allows the div to shrink if space is limited
-         - 50% (basis): initially sets the width of each div to 50% of the row2 container */
-      flex: 1 1 50%;
-
-      /* max-width: 50% ensures that even if the div grows, it will not exceed 50% of the parent width */
-      max-width: 50%;
+      flex: 1 1 40%; /* Allow flexibility in width */
+      max-width: 50%; /* Maximum width constraint */
     }
-  }
-
-  .row2-register {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    width: 100%;
   }
 }
 </style>
