@@ -1,16 +1,7 @@
 
-// #define COLLAR_CODE
-#define STATION_CODE
+#define COLLAR_CODE
+// #define STATION_CODE
 
-/*
-Todo:
-Station code:
-- add webpage to setup wifi connection (store in NVS)
-- add camera code
-
-Collar code:
-- clean up code a bit
-*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -127,6 +118,159 @@ static int8_t currentRSSI = 0;
 // Declare a semaphore to control task execution
 SemaphoreHandle_t xSemaphore;
 
+/*
+This is to start the ESP32 in AP mode, so that WiFi credentials can be given to it
+and stored into NVS
+#include "web_server.h"
+
+void app_main(void)
+{
+    initIO();
+    ESP_ERROR_CHECK(nvs_flash_init());
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    ESP_ERROR_CHECK(wifi_init_softap());
+    start_webserver();
+
+    while (1)
+    {
+        delayMs(1000);
+        seconds++;
+    }
+}
+
+static esp_err_t root_handler(httpd_req_t *req)
+{
+    const char *resp =
+        "<html>"
+        "<head><style>"
+        "body{display:flex; flex-direction:column; align-items:center; height:80vh; margin:0; background:#f0f0f0; font-family:Arial,sans-serif;} "
+        "form{display:flex; flex-direction:column; align-items:center; width:80%; max-width:500px; padding:20px; background:#fff; box-shadow:0 4px 20px rgba(0,0,0,0.1); border-radius:10px;} "
+        "label{font-size:2rem; color:#333;} "
+        "input{width:100%; padding:15px; font-size:2rem; border:1px solid #ccc; border-radius:5px; margin:10px 0;} "
+        "input:focus{border-color:#007BFF; outline:none;} "
+        "input[type=\"submit\"]{background-color:#007BFF; color:#fff; border:none; cursor:pointer; font-weight:bold;} "
+        "input[type=\"submit\"]:hover{background-color:#0056b3;}"
+        "</style></head>"
+        "<body>"
+        "<form action=\"/process-info\" method=\"post\">"
+        "<label for=\"ssid_input\">Enter WiFi Credentials</label>"
+        "<input type=\"text\" id=\"ssid_input\" name=\"ssid\" placeholder=\"SSID\" required />"
+        "<input type=\"text\" id=\"password_input\" name=\"password\" placeholder=\"Password\" required />"
+        "<input type=\"submit\" value=\"Submit\" />"
+        "</form>"
+        "</body>"
+        "</html>";
+
+    return httpd_resp_send(req, resp, HTTPD_RESP_USE_STRLEN);
+}
+
+esp_err_t process_info_handler(httpd_req_t *req)
+{
+    char buffer[256];
+    int ret = httpd_req_recv(req, buffer, sizeof(buffer) - 1);
+    if (ret <= 0) return httpd_resp_send_500(req);
+
+    buffer[ret] = '\0';
+
+    // Extract SSID and password from buffer
+    char ssid[32], password[64];
+    sscanf(buffer, "ssid=%[^&]&password=%s", ssid, password);
+
+    // Save SSID and password to NVS (implement this part based on your NVS handling code)
+    // Example:
+    // save_wifi_credentials(ssid, password);
+
+    const char *resp = "<html><body><h3>Credentials saved! Rebooting...</h3></body></html>";
+    httpd_resp_send(req, resp, HTTPD_RESP_USE_STRLEN);
+
+    // Trigger a reboot or restart your WiFi
+    // esp_restart();
+
+    return ESP_OK;
+}
+
+httpd_uri_t root_uri =
+{
+    .uri       = "/",
+    .method    = HTTP_GET,
+    .handler   = root_handler,
+    .user_ctx  = NULL
+};
+
+httpd_uri_t process_info_uri =
+{
+    .uri       = "/process-info",
+    .method    = HTTP_POST,
+    .handler   = process_info_handler,
+    .user_ctx  = NULL
+};
+
+static httpd_handle_t start_webserver(void)
+{
+    httpd_handle_t server = NULL;
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.stack_size = 20480;
+
+    if (httpd_start(&server, &config) == ESP_OK)
+    {
+        httpd_register_uri_handler(server, &root_uri);
+        httpd_register_uri_handler(server, &process_info_uri);
+        return server;
+    }
+
+    return NULL;
+}
+
+static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
+{
+    if (event_id == WIFI_EVENT_AP_STACONNECTED)
+    {
+        wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
+        ESP_LOGI(TAG, "station "MACSTR" join, AID=%d", MAC2STR(event->mac), event->aid);
+    }
+}
+
+esp_err_t wifi_init_softap(void)
+{
+    esp_netif_create_default_wifi_ap();
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL));
+
+    wifi_config_t wifi_config = {
+        .ap = {
+            .ssid = EXAMPLE_ESP_WIFI_SSID,
+            .ssid_len = strlen(EXAMPLE_ESP_WIFI_SSID),
+            .password = EXAMPLE_ESP_WIFI_PASS,
+            .max_connection = EXAMPLE_MAX_STA_CONN,
+            .authmode = WIFI_AUTH_WPA_WPA2_PSK
+        },
+    };
+    if (strlen(EXAMPLE_ESP_WIFI_PASS) == 0) {
+        wifi_config.ap.authmode = WIFI_AUTH_OPEN;
+    }
+
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
+
+    ESP_LOGI(TAG, "SoftAP initialized. SSID: %s password: %s", EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
+    return ESP_OK;
+}
+*/
+
+#define ALARM_LED GPIO_NUM_26
+#define SERVER_DC_LED GPIO_NUM_25
+
+void initIO()
+{
+    // The LEDs will be used to signal important events
+    gpio_set_direction(ALARM_LED, GPIO_MODE_OUTPUT);
+    gpio_set_direction(SERVER_DC_LED, GPIO_MODE_OUTPUT);
+}
+
 static void resolve_server_ip(char *host_ip, size_t ip_size)
 {
     struct sockaddr_in broadcast_addr, source_addr;
@@ -143,7 +287,7 @@ static void resolve_server_ip(char *host_ip, size_t ip_size)
         udp_sock = socket(AF_INET, SOCK_DGRAM, 0);
         if (udp_sock < 0)
         {
-            ESP_LOGE(TAG, "Unable to create UDP socket: errno %d", errno);
+            ESP_LOGE(TAG, "[X] Unable to create UDP socket: errno %d", errno);
             vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
             continue;
         }
@@ -152,7 +296,7 @@ static void resolve_server_ip(char *host_ip, size_t ip_size)
         int broadcast_enable = 1;
         if (setsockopt(udp_sock, SOL_SOCKET, SO_BROADCAST, &broadcast_enable, sizeof(broadcast_enable)) < 0)
         {
-            ESP_LOGE(TAG, "setsockopt failed: errno %d", errno);
+            ESP_LOGE(TAG, "[X] setsockopt failed: errno %d", errno);
             close(udp_sock);
             vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
             continue;
@@ -163,7 +307,7 @@ static void resolve_server_ip(char *host_ip, size_t ip_size)
         timeout.tv_usec = RECEIVE_TIMEOUT_MS * 1000; // Set timeout to 2 seconds
         if (setsockopt(udp_sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0)
         {
-            ESP_LOGE(TAG, "setsockopt for timeout failed: errno %d", errno);
+            ESP_LOGE(TAG, "[X] setsockopt for timeout failed: errno %d", errno);
             close(udp_sock);
             vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
             continue;
@@ -178,18 +322,18 @@ static void resolve_server_ip(char *host_ip, size_t ip_size)
         // Send the broadcast message
         if (sendto(udp_sock, message, strlen(message), 0, (struct sockaddr *)&broadcast_addr, sizeof(broadcast_addr)) < 0)
         {
-            ESP_LOGE(TAG, "Error sending broadcast: errno %d", errno);
+            ESP_LOGE(TAG, "[X] Error sending broadcast: errno %d", errno);
             close(udp_sock);
             vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
             continue;
         }
-        ESP_LOGI(TAG, "Broadcast sent");
+        ESP_LOGI(TAG, "[!] Broadcast sent");
 
         // Wait for the server's response
         len = recvfrom(udp_sock, receive_buffer, sizeof(receive_buffer) - 1, 0, (struct sockaddr *)&source_addr, &addr_len);
         if (len < 0)
         {
-            ESP_LOGE(TAG, "recvfrom failed or timed out: errno %d", errno);
+            ESP_LOGE(TAG, "[X] recvfrom failed or timed out: errno %d", errno);
             close(udp_sock);
             vTaskDelay(pdMS_TO_TICKS(BROADCAST_INTERVAL_MS)); // Wait before retrying
             continue;
@@ -214,7 +358,7 @@ static void resolve_server_ip(char *host_ip, size_t ip_size)
 // Prepare and set configuration of timer that will be used by LED Controller
 ledc_timer_config_t ledc_timer = {
     .duty_resolution = LEDC_TIMER_1_BIT, // 1-bit resolution (on/off only)
-    .freq_hz = 25000,                    // 25kHz frequency for the transducer
+    .freq_hz = 5000,                     // 25kHz frequency for the transducer
     .speed_mode = LEDC_HIGH_SPEED_MODE,  // High-speed mode
     .timer_num = LEDC_HS_TIMER,          // High-speed timer
     .clk_cfg = LEDC_AUTO_CLK             // Auto-select the source clock
@@ -232,6 +376,8 @@ ledc_channel_config_t ledc_channel = {
 
 void app_main(void)
 {
+    // Initialize LEDs for visual information
+    initIO();
 
     ESP_LOGI(TAG, "[+] Startup...");
 
@@ -283,12 +429,20 @@ void led_duty_task(void *param)
     ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 1);
     ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
 
+    // Turn the alarm LED on
+    ESP_LOGI("LED_TASK", "Turning ALARM LED ON");
+    gpio_set_level(ALARM_LED, 1);
+
     // Keep the duty cycle at 4000 for 5 seconds
     vTaskDelay(pdMS_TO_TICKS(5000));
 
     // Turn off the duty cycle (set to 0)
     ledc_set_duty(ledc_channel.speed_mode, ledc_channel.channel, 0);
     ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
+
+    // Turn the alarm LED off
+    ESP_LOGI("LED_TASK", "Turning ALARM LED OFF");
+    gpio_set_level(ALARM_LED, 0);
 
     // Release the semaphore once the task completes
     xSemaphoreGive(xSemaphore);
@@ -297,7 +451,7 @@ void led_duty_task(void *param)
     vTaskDelete(NULL);
 }
 
-void start_led_task()
+void start_pwm_task()
 {
     // Try to take the semaphore
     if (xSemaphoreTake(xSemaphore, (TickType_t)0) == pdTRUE)
@@ -486,7 +640,6 @@ static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t 
                 if (can_process)
                 {
                     // If the RSSI is =< allowed
-                    ESP_LOGI(TAG, "rssi: %d", packet->rx_ctrl.rssi);
                     if ((int8_t)packet->rx_ctrl.rssi >= (int8_t)-50)
                     {
 
@@ -512,7 +665,7 @@ static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t 
                             }
                         }
                         // Trigger the transducer to turn on
-                        start_led_task();
+                        start_pwm_task();
 
                         // Format the MAC to a string so it can be printed and sent to the server as a string
                         formatMAC2STR(mac_address, mac_string);
@@ -567,20 +720,10 @@ void delayMs(uint16_t ms)
     vTaskDelay(ms / portTICK_PERIOD_MS);
 }
 
-/*
-TCP task will:
-- communicate events (send MAC of device to server)
-- receive settings adjustments for distance and camera activation
-
-DogRepelEvent:MAC:StationID:Distance
-*/
-/* this will be used to send Login and Keep Alives, make it simpler */
 static void tcp_client_task(void *pvParameters)
 {
     char rx_buffer[128];
     char tx_buffer[128];
-    // char host_ip[] = HOST_IP_ADDR;
-    // char host_ip[16]; // Buffer to store resolved IP
     int addr_family = 0;
     int ip_protocol = 0;
 
@@ -588,15 +731,8 @@ static void tcp_client_task(void *pvParameters)
     {
         static bool connected = false;
 
-        // Resolve the server's IP via UDP broadcast
-        // resolve_server_ip(host_ip, sizeof(host_ip));
-
-        // if (strlen(host_ip) == 0)
-        // {
-        //     ESP_LOGE(TAG, "Failed to resolve host. Retrying...");
-        //     vTaskDelay(2000 / portTICK_PERIOD_MS);
-        //     continue;
-        // }
+        // Advise that the esp is currently not connected to server
+        gpio_set_level(SERVER_DC_LED, 1);
 
         struct sockaddr_in dest_addr;
         dest_addr.sin_addr.s_addr = inet_addr(server_ip);
@@ -637,8 +773,8 @@ static void tcp_client_task(void *pvParameters)
         }
         ESP_LOGI(TAG, "[✓] Successfully connected");
         connected = true;
+        gpio_set_level(SERVER_DC_LED, 0);
 
-        // Change the timeout time now to 1 second
         timeout.tv_sec = 0;
         timeout.tv_usec = 500000;
         setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout);
@@ -663,7 +799,14 @@ static void tcp_client_task(void *pvParameters)
 
             // In this case, the station is receiving a message to update its distance threshold
             int len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
-            if (len > 0)
+            if (len == 0)
+            {
+                ESP_LOGI(TAG, "Connection closed by the server.");
+                close(sock);
+                connected = false;
+                break;
+            }
+            else if (len > 0)
             {
                 rx_buffer[len] = '\0'; // Null-terminate whatever we received and treat like a string
                 ESP_LOGI(TAG, "Received %d bytes from %s: %s", len, server_ip, rx_buffer);
@@ -671,12 +814,15 @@ static void tcp_client_task(void *pvParameters)
                 // Pass what was received to be handled
                 handleDeviceCommand(rx_buffer);
             }
-
-            if (sock == -1)
+            else if (len < 0)
             {
-                ESP_LOGE(TAG, "[!] Socket failed, closing.");
-                close(sock);
-                break;
+                if (errno != EWOULDBLOCK && errno != EAGAIN)
+                {
+                    ESP_LOGE(TAG, "[X] Error occurred during receiving: errno %d. Closing socket.", errno);
+                    close(sock);
+                    connected = false;
+                    break;
+                }
             }
             delayMs(1);
         }
@@ -924,6 +1070,7 @@ void app_main(void)
 
     wifi_init_sta();
     esp_sleep_enable_timer_wakeup(5 * 1000000); // added 5 second sleep
+
     while (1)
     {
         delayMs(1);

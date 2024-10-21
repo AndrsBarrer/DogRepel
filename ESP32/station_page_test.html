@@ -1,0 +1,61 @@
+<html>
+  <head>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background: #f0f0f0;
+        font-family: Arial, sans-serif;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 80%;
+        max-width: 500px;
+        padding: 20px;
+        background: #fff;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+      }
+      label,
+      h3 {
+        font-size: 2rem;
+        color: #333;
+      }
+      input {
+        width: 100%;
+        padding: 15px;
+        font-size: 2rem;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin: 10px 0;
+        transition: border-color 0.3s;
+      }
+      input:focus {
+        border-color: #007bff;
+      }
+      input[type="submit"] {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      input[type="submit"]:hover {
+        background-color: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <form action="/post_wifi" method="post">
+      <label for="ssid_input">Enter WiFi Credentials</label>
+      <input type="text" id="ssid_input" placeholder="SSID" required />
+      <input type="text" id="password_input" placeholder="Password" required />
+      <input type="submit" value="Submit" />
+    </form>
+  </body>
+</html>
