@@ -63,12 +63,6 @@ server.on("connection", function (sock) {
 
     // Upload the event to the database
     uploadMessage(data);
-    // Write the data back to all the connected, the client will receive it as data from the server
-    // sockets.forEach(function (sock, index, array) {
-    //   sock.write(
-    //     sock.remoteAddress + ":" + sock.remotePort + " said " + data + "\n"
-    //   );
-    // });
   });
 
   // Add a 'close' event handler to this instance of socket
