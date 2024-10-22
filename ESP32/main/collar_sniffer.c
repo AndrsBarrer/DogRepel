@@ -1,6 +1,6 @@
 
-#define COLLAR_CODE
-// #define STATION_CODE
+// #define COLLAR_CODE
+#define STATION_CODE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +18,7 @@
 #include "freertos/event_groups.h"
 
 #include "esp_wifi.h"
+#include "esp_http_server.h"
 #include "esp_event.h"
 #include "esp_system.h"
 #include "esp_mac.h"
@@ -118,27 +119,6 @@ static int8_t currentRSSI = 0;
 // Declare a semaphore to control task execution
 SemaphoreHandle_t xSemaphore;
 
-/*
-This is to start the ESP32 in AP mode, so that WiFi credentials can be given to it
-and stored into NVS
-#include "web_server.h"
-
-void app_main(void)
-{
-    initIO();
-    ESP_ERROR_CHECK(nvs_flash_init());
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    ESP_ERROR_CHECK(wifi_init_softap());
-    start_webserver();
-
-    while (1)
-    {
-        delayMs(1000);
-        seconds++;
-    }
-}
-
 static esp_err_t root_handler(httpd_req_t *req)
 {
     const char *resp =
@@ -169,14 +149,20 @@ esp_err_t process_info_handler(httpd_req_t *req)
 {
     char buffer[256];
     int ret = httpd_req_recv(req, buffer, sizeof(buffer) - 1);
-    if (ret <= 0) return httpd_resp_send_500(req);
+    if (ret <= 0)
+        return httpd_resp_send_500(req);
 
     buffer[ret] = '\0';
 
+    ESP_LOGI(TAG, "Received: %s", buffer);
+
     // Extract SSID and password from buffer
     char ssid[32], password[64];
-    sscanf(buffer, "ssid=%[^&]&password=%s", ssid, password);
+    sscanf(buffer, "%[^&]:%s", ssid, password);
 
+    char **tokens = tokenizeString(buffer, ":");
+    ESP_LOGI(TAG, "SSID: %s", tokens[0]);
+    ESP_LOGI(TAG, "PASS: %s", tokens[1]);
     // Save SSID and password to NVS (implement this part based on your NVS handling code)
     // Example:
     // save_wifi_credentials(ssid, password);
@@ -191,20 +177,18 @@ esp_err_t process_info_handler(httpd_req_t *req)
 }
 
 httpd_uri_t root_uri =
-{
-    .uri       = "/",
-    .method    = HTTP_GET,
-    .handler   = root_handler,
-    .user_ctx  = NULL
-};
+    {
+        .uri = "/",
+        .method = HTTP_GET,
+        .handler = root_handler,
+        .user_ctx = NULL};
 
 httpd_uri_t process_info_uri =
-{
-    .uri       = "/process-info",
-    .method    = HTTP_POST,
-    .handler   = process_info_handler,
-    .user_ctx  = NULL
-};
+    {
+        .uri = "/process-info",
+        .method = HTTP_POST,
+        .handler = process_info_handler,
+        .user_ctx = NULL};
 
 static httpd_handle_t start_webserver(void)
 {
@@ -222,47 +206,14 @@ static httpd_handle_t start_webserver(void)
     return NULL;
 }
 
-static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
-{
-    if (event_id == WIFI_EVENT_AP_STACONNECTED)
-    {
-        wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
-        ESP_LOGI(TAG, "station "MACSTR" join, AID=%d", MAC2STR(event->mac), event->aid);
-    }
-}
-
-esp_err_t wifi_init_softap(void)
-{
-    esp_netif_create_default_wifi_ap();
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL));
-
-    wifi_config_t wifi_config = {
-        .ap = {
-            .ssid = EXAMPLE_ESP_WIFI_SSID,
-            .ssid_len = strlen(EXAMPLE_ESP_WIFI_SSID),
-            .password = EXAMPLE_ESP_WIFI_PASS,
-            .max_connection = EXAMPLE_MAX_STA_CONN,
-            .authmode = WIFI_AUTH_WPA_WPA2_PSK
-        },
-    };
-    if (strlen(EXAMPLE_ESP_WIFI_PASS) == 0) {
-        wifi_config.ap.authmode = WIFI_AUTH_OPEN;
-    }
-
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
-
-    ESP_LOGI(TAG, "SoftAP initialized. SSID: %s password: %s", EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
-    return ESP_OK;
-}
-*/
-
-#define ALARM_LED GPIO_NUM_26
-#define SERVER_DC_LED GPIO_NUM_25
+// static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
+// {
+//     if (event_id == WIFI_EVENT_AP_STACONNECTED)
+//     {
+//         wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
+//         ESP_LOGI(TAG, "station "MACSTR" join, AID=%d", MAC2STR(event->mac), event->aid);
+//     }
+// }
 
 void initIO()
 {
@@ -374,6 +325,47 @@ ledc_channel_config_t ledc_channel = {
     .timer_sel = LEDC_HS_TIMER          // Using high-speed timer
 };
 
+void wifi_init_softap(void)
+{
+    ESP_ERROR_CHECK(esp_netif_init());
+    esp_netif_create_default_wifi_ap();
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL));
+
+    wifi_config_t wifi_config =
+        {
+            .ap =
+                {
+                    .ssid = ESP_WIFI_AP_SSID,
+                    .ssid_len = strlen(ESP_WIFI_AP_SSID),
+                    .channel = ESP_WIFI_CHANNEL,
+                    .password = ESP_WIFI_AP_PASSWD,
+                    .max_connection = MAX_STA_CONN,
+                    .authmode = WIFI_AUTH_WPA_WPA2_PSK},
+        };
+
+    if (strlen(ESP_WIFI_AP_PASSWD) == 0)
+    {
+        wifi_config.ap.authmode = WIFI_AUTH_OPEN;
+    }
+
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
+
+    esp_netif_ip_info_t ip_info;
+    esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_AP_DEF"), &ip_info);
+    ESP_LOGI(TAG, "AP IP Address: " IPSTR, IP2STR(&ip_info.ip));
+
+    ESP_ERROR_CHECK(esp_wifi_start());
+
+    ESP_LOGI(TAG, "Wi-Fi initialization complete.");
+    ESP_LOGI(TAG, "SSID: %s", ESP_WIFI_AP_SSID);
+    ESP_LOGI(TAG, "Password: %s", ESP_WIFI_AP_PASSWD);
+}
+
 void app_main(void)
 {
     // Initialize LEDs for visual information
@@ -389,35 +381,76 @@ void app_main(void)
     ESP_ERROR_CHECK(nvs_flash_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    ESP_LOGI(TAG, "[+] Initializing ESP in Station Mode");
-    wifi_init_sta();
+    nvs_handle_t my_handle;
+    int err = nvs_open("wifi_storage", NVS_READWRITE, &my_handle);
+    if (err != ESP_OK)
+    {
+        printf("Error (%s) opening NVS handle!\n", esp_err_to_name(err));
+    }
+    else
+    {
+        nvs_get_i8(my_handle, "currentWifiMode", (int8_t *)&currentWifiMode);
+    }
 
-    resolve_server_ip(server_ip, sizeof(server_ip));
-    ESP_LOGI(TAG, "Server IP resolved: %s", server_ip);
+    nvs_close(my_handle);
 
-    // Set configuration of timer0 for high speed channels
-    ledc_timer_config(&ledc_timer);
+    if (currentWifiMode == WIFI_MODE_AP)
+    {
+        ESP_LOGI(TAG, "[+] Initializing ESP in Access Point Mode.");
+        wifi_init_softap();
+        ESP_LOGI(TAG, "[+] Initializing Web Server.");
+        start_webserver();
+    }
+    else if (currentWifiMode == WIFI_MODE_STA)
+    {
+        ESP_LOGI(TAG, "[+] Initializing ESP in Station Mode");
+        wifi_init_sta();
 
-    // Prepare and set configuration of timer1 for low speed channels
-    ledc_timer.speed_mode = LEDC_HS_MODE;
-    ledc_timer.timer_num = LEDC_HS_TIMER;
-    ledc_timer_config(&ledc_timer);
+        resolve_server_ip(server_ip, sizeof(server_ip));
+        ESP_LOGI(TAG, "Server IP resolved: %s", server_ip);
 
-    // Set LED Controller with previously prepared configuration
-    ledc_channel_config(&ledc_channel);
+        // Set configuration of timer0 for high speed channels
+        ledc_timer_config(&ledc_timer);
 
-    // Initialize fade service.
-    ledc_fade_func_install(0);
+        // Prepare and set configuration of timer1 for low speed channels
+        ledc_timer.speed_mode = LEDC_HS_MODE;
+        ledc_timer.timer_num = LEDC_HS_TIMER;
+        ledc_timer_config(&ledc_timer);
 
-    // Initialize the semaphore as "available" (binary semaphore)
-    xSemaphore = xSemaphoreCreateBinary();
-    xSemaphoreGive(xSemaphore); // Set it to available initially
+        // Set LED Controller with previously prepared configuration
+        ledc_channel_config(&ledc_channel);
 
-    ESP_LOGI(TAG, "[+] Starting sniffing task...");
-    xTaskCreate(&sniffer_task, "sniffer_task", 10000, NULL, 1, NULL);
+        // Initialize fade service.
+        ledc_fade_func_install(0);
+
+        // Initialize the semaphore as "available" (binary semaphore)
+        xSemaphore = xSemaphoreCreateBinary();
+        xSemaphoreGive(xSemaphore); // Set it to available initially
+
+        ESP_LOGI(TAG, "[+] Starting sniffing task...");
+        xTaskCreate(&sniffer_task, "sniffer_task", 10000, NULL, 1, NULL);
+    }
 
     while (RUNNING)
     {
+        // Both SSID and Password were stored for the ESP to connect to given WiFi in Station mode
+        if (storedSSID && storedPASS && storedNAME)
+        {
+            nvs_handle_t my_handle;
+            err = nvs_open("wifi_storage", NVS_READWRITE, &my_handle);
+
+            // Set integer in NVS storage so that next go around can be in Station mode
+            err = nvs_set_i8(my_handle, "currentWifiMode", WIFI_MODE_STA);
+            printf((err != ESP_OK) ? "Failed to set to Station Mode!\n" : "Set to Station mode.\n");
+            nvs_close(my_handle);
+
+            printf("Restarting in 5 seconds...");
+            fflush(stdout);
+            delayMs(5000);
+
+            // Restart so that AP mode can be set
+            esp_restart();
+        }
         delayMs(1);
     }
 }

@@ -33,3 +33,12 @@
 #define LEDC_TEST_FADE_TIME (3000)
 
 #define MAXIMUM_PWM 4000
+
+#define ALARM_LED GPIO_NUM_26
+#define SERVER_DC_LED GPIO_NUM_25
+
+// Variables to keep track of when in AP mode, they are not used in Station mode
+static wifi_mode_t currentWifiMode = WIFI_MODE_AP;
+volatile bool storedSSID = false;
+volatile bool storedPASS = false;
+volatile bool storedNAME = false;
