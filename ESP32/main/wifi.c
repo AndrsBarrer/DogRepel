@@ -287,8 +287,8 @@ void wifi_init_sta(void)
     // Configure Wi-Fi station
     wifi_config_t wifi_sta_config = {
         .sta = {
-            .ssid = WIFI_STA_SSID,
-            .password = WIFI_STA_PASSWD,
+            .ssid = WIFI_DOG_REPEL_SSID,
+            .password = WIFI_DOG_REPEL_PASS,
             .scan_method = WIFI_FAST_SCAN, // this is used to save battery
             .failure_retry_cnt = ESP_MAXIMUM_RETRY,
             .threshold.authmode = ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD,

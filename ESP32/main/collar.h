@@ -23,37 +23,12 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 
-// #include "lwip/sockets.h"
 #include "lwip/netdb.h"
 
-// #include "driver/ledc.h"
 #include "math.h"
 #include "esp_mac.h"
 
 #define LED GPIO_NUM_2
-
-// /* AP Configuration */
-// #define ESP_WIFI_AP_SSID "MyWifi"
-// #define ESP_WIFI_AP_PASSWD "12345678"
-// #define ESP_WIFI_CHANNEL 1
-// #define MAX_STA_CONN 4
-
-// #define LEDC_HS_TIMER LEDC_TIMER_0
-// #define LEDC_HS_MODE LEDC_HIGH_SPEED_MODE
-// #define LEDC_HS_CH0_GPIO (18)
-// #define LEDC_HS_CH0_CHANNEL LEDC_CHANNEL_0
-// #define LEDC_HS_CH1_GPIO (19)
-// #define LEDC_HS_CH1_CHANNEL LEDC_CHANNEL_1
-// #define LEDC_LS_TIMER LEDC_TIMER_1
-// #define LEDC_LS_MODE LEDC_LOW_SPEED_MODE
-// #define LEDC_LS_CH2_GPIO (4)
-// #define LEDC_LS_CH2_CHANNEL LEDC_CHANNEL_2
-// #define LEDC_LS_CH3_GPIO (5)
-// #define LEDC_LS_CH3_CHANNEL LEDC_CHANNEL_3
-
-// #define LEDC_TEST_CH_NUM (4)
-// #define LEDC_TEST_DUTY (4000)
-// #define LEDC_TEST_FADE_TIME (3000)
 
 #define MAXIMUM_PWM 4000
 
@@ -86,23 +61,12 @@ static bool RUNNING = true;
 #define CONFIG_CHANNEL 6
 #define MAC_STR_LEN 18
 
-// Used to connect to TCP server
-// #define HOST_IP_ADDR "192.168.0.28"
-// Resolve server IP address via UDP broadcast
-// #define IP_ADDR_STR_LEN 20
-// char server_ip[IP_ADDR_STR_LEN];
-// #define PORT 2222
-
 #define MNGMT_PROBE_MASK 0x00F0
 #define MNGMT_PROBE_PACKET 0x0040
 #define MAX_DEVICES 10
 #define COOLDOWN_PERIOD 5000 // Cooldown period in milliseconds
 
-// Used to store MAC of device when an event occurs
-// static char got_collar_mac[18] = {0};
 static uint8_t station_mac_addr[6] = {0};
-// static char station_mac_addr_str[20] = {0};
-// static int8_t currentRSSI = 0;
 
 // Function to resolve server IP using UDP broadcast
 #define UDP_PORT 12345
@@ -133,7 +97,6 @@ static void sniffer_task(void *pvParameter);
 static void wifi_sniffer_init(void);
 static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t type);
 // static void tcp_client_task(void *pvParameters);
-bool handleDeviceCommand(char *rx_buffer);
 char **tokenizeString(char *str, const char *delim);
 void wifi_init_sta();
 
@@ -144,26 +107,14 @@ void formatMAC2STR(uint8_t mac[6], char *returnMACstr);
 #ifdef COLLAR_CODE
 #include "esp_pm.h"
 #include "esp_sleep.h"
+
 /* STA Configuration */
-#define WIFI_STA_SSID "Dog_Repel"
-#define WIFI_STA_PASSWD "123456789"
 #define ESP_MAXIMUM_RETRY 5
 #define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA2_PSK
-
-static const char *TAG_AP = "WiFi SoftAP";
-static const char *TAG_STA = "WiFi Station";
 
 // Function prototypes
 esp_err_t initIO();
 void ADC1_Ch3_Ini(void);
 float ADC1_Ch3_Read(void);
 float ADC1_Ch3_Read_mV(void);
-bool handleDeviceCommand(char **tokens, char *tx_buffer, size_t sizeBuffer);
-bool handleWifiMessages(char **tokens, char *tx_buffer, size_t sizeBuffer);
-
-static void wifi_event_handler(void *arg, esp_event_base_t event_base,
-                               int32_t event_id, void *event_data);
-
-void wifi_init_softap(void);
-void wifi_init_sta(void);
 #endif
