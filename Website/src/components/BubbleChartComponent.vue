@@ -31,7 +31,6 @@ const fetchData = async () => {
   try {
     // Replace this with your actual service call
     const dogVisits = await DogService.getDogVisits();
-    console.log(dogVisits);
 
     // Group the data by station_id and count the frequency of visits
     const stationVisitMap = dogVisits.reduce((acc, visit) => {
@@ -52,13 +51,15 @@ const fetchData = async () => {
     const chartData = Object.entries(stationVisitMap).map(
       ([station_id, info]) => ({
         x: info.count, // Number of visits (frequency)
-        y: parseInt(station_id, 10), // Station ID as Y-axis
+        y: Math.abs(info.totalDistance / info.visits),
         r: Math.abs(info.totalDistance / info.visits), // Average distance as bubble radius
-        backgroundColor: generateColor(station_id), // Generate color based on station_id
+        station_id: station_id,
+        backgroundColor: generateColor(station_id),
         borderColor: generateColor(station_id),
       })
     );
 
+    console.log(chartData);
     return chartData;
   } catch (error) {
     console.error("Error fetching data: ", error);
@@ -83,7 +84,7 @@ onMounted(async () => {
   // Separate datasets for each station, dynamically color-coded
   const data = {
     datasets: fetchedData.map((item) => ({
-      label: `Station ${item.y}`, // Show the station ID in the legend
+      label: `Station ${item.station_id}`, // Show the station ID in the legend
       data: [item], // Each station's data as a separate dataset
       backgroundColor: item.backgroundColor,
       borderColor: item.borderColor,
@@ -102,7 +103,7 @@ onMounted(async () => {
           text: "Number of Visits (Frequency)",
         },
         min: 0,
-        max: 300, // Adjust based on your data
+        max: 300,
       },
       y: {
         type: "linear",
@@ -111,10 +112,10 @@ onMounted(async () => {
         },
         title: {
           display: true,
-          text: "Station ID",
+          text: "Average abs. RSSI (Distance)",
         },
         min: 0,
-        max: 10, // Adjust based on the number of stations
+        max: 100,
       },
     },
     plugins: {
