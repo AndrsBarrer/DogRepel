@@ -55,7 +55,6 @@
 <script setup lang="ts">
 import DogService from "../services/DogService";
 import { ref } from "vue";
-import axios from "axios";
 
 const dog = ref({
   name: "",

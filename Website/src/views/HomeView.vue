@@ -3,6 +3,7 @@
   <main>
     <div class="page-container">
       <ChartComponent />
+      <BubbleChartComponent />
 
       <div class="tables-wrapper">
         <div class="tables">
@@ -15,14 +16,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
-import DogService from "../services/DogService";
-
 import ChartComponent from "../components/ChartComponent.vue";
-import MenuComponent from "../components/MenuComponent.vue";
-import RegisterDog from "../components/RegisterDog.vue";
-import RegisterStation from "../components/RegisterStation.vue";
-import DataTableComponent from "../components/DataTableComponent.vue";
+import BubbleChartComponent from "../components/BubbleChartComponent.vue";
 import EditDogsTable from "../components/EditDogsTable.vue";
 import EditStationsTable from "../components/EditStationsTable.vue";
 </script>

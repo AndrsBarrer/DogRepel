@@ -25,15 +25,12 @@ async function fetchDogVisits() {
   try {
     // Fetch dog_visits data from the API
     const dogVisits = await DogService.getDogVisits();
-    console.log(dogVisits);
 
     // Fetch dog details (names) from the API
     const dogs = await DogService.getDogs();
-    console.log(dogs.results);
 
     // Fetch station details (names) from the API
     const stations = await StationService.getStations();
-    console.log(stations.results);
 
     // Map dog names to dog_ids
     const dogNamesMap = dogs.results.reduce((map, dog) => {
