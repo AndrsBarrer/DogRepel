@@ -1,21 +1,54 @@
 import { createApp } from "vue";
 import App from "./App.vue";
 import PrimeVue from "primevue/config";
-import router from "./router"; // Import the router instance
+import router from "./router";
 import axios from "axios";
 import VueAxios from "vue-axios";
 
-import Chart from "primevue/chart"; // Import Chart from PrimeVue
+import Chart from "primevue/chart";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
 
-import Aura from "@primevue/themes/aura";
-import "primeicons/primeicons.css"; // PrimeIcons CSS
+// Theme imports - order is important
+import "primevue/resources/themes/lara-dark-blue/theme.css";
+import "primevue/resources/primevue.min.css";
+import "primeicons/primeicons.css";
 
 const app = createApp(App);
 axios.defaults.baseURL = "http://localhost:4000";
+
+// app.use(PrimeVue, {
+//   // Default theme configuration
+//   theme: {
+//     preset: Aura,
+//     // options: {
+//     //   prefix: "p",
+//     //   darkModeSelector: "true",
+//     //   cssLayer: false,
+//     // },
+//   },
+// });
+
+// app.use(PrimeVue, {
+//   // Default theme configuration
+//   theme: {
+//     preset: Aura,
+//     // options: {
+//     //   prefix: "p",
+//     //   darkModeSelector: "true",
+//     //   cssLayer: false,
+//     // },
+//   },
+// });
+
+// Use PrimeVue first before registering components
+app.use(PrimeVue, {
+  ripple: true,
+  unstyled: false,
+  dark: true, // Enable dark mode explicitly
+});
 
 app.use(router); // Use the router instance with the app
 app.use(VueAxios, axios);
@@ -24,25 +57,5 @@ app.component("DataTable", DataTable);
 app.component("Column", Column);
 app.component("InputText", InputText);
 app.component("InputNumber", InputNumber);
-
-
-// Import theme (using Lara Dark theme as it's one of the most commonly used)
-import 'primevue/resources/themes/lara-dark-blue/theme.css'
-import 'primevue/resources/primevue.min.css'
-import 'primeicons/primeicons.css'
-
-app.use(PrimeVue, {
-  // Default theme configuration
-  theme: {
-    preset: Aura,
-     options: {
-       prefix: "p",
-       darkModeSelector: "true",
-       cssLayer: false,
-     },
-  },
-});
-
-
 
 app.mount("#app");

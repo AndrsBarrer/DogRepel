@@ -96,7 +96,7 @@ onMounted(async () => {
       x: {
         type: "linear",
         grid: {
-          color: "rgba(255, 255, 255, 0.1)", // White grid lines on the X-axis
+          color: "rgba(255, 255, 255, 0.5)", // White grid lines on the X-axis
         },
         title: {
           display: true,
@@ -121,6 +121,9 @@ onMounted(async () => {
     plugins: {
       legend: {
         display: true, // Show the legend with station colors
+        labels: {
+          color: "white", // Set legend text color to white
+        },
       },
     },
   };
