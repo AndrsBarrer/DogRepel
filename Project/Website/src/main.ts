@@ -25,16 +25,24 @@ app.component("Column", Column);
 app.component("InputText", InputText);
 app.component("InputNumber", InputNumber);
 
+
+// Import theme (using Lara Dark theme as it's one of the most commonly used)
+import 'primevue/resources/themes/lara-dark-blue/theme.css'
+import 'primevue/resources/primevue.min.css'
+import 'primeicons/primeicons.css'
+
 app.use(PrimeVue, {
   // Default theme configuration
   theme: {
     preset: Aura,
-    // options: {
-    //   prefix: "p",
-    //   darkModeSelector: "true",
-    //   cssLayer: false,
-    // },
+     options: {
+       prefix: "p",
+       darkModeSelector: "true",
+       cssLayer: false,
+     },
   },
 });
+
+
 
 app.mount("#app");

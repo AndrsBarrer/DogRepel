@@ -13,15 +13,3 @@ import vueJsx from "@vitejs/plugin-vue-jsx";
 //     },
 //   },
 // });
-
-import path from "path";
-export default defineConfig({
-  root: path.resolve(__dirname, "Website"), // Set Website as the root
-  plugins: [vue()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "Website/src"), // Alias for Website's src directory
-    },
-    dedupe: ["vue"], // Ensures Vue is loaded from the root node_modules
-  },
-});
