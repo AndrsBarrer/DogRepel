@@ -87,7 +87,8 @@ onMounted(async () => {
       label: `Station ${item.station_id}`, // Show the station ID in the legend
       data: [item], // Each station's data as a separate dataset
       backgroundColor: item.backgroundColor,
-      borderColor: item.borderColor,
+      borderColor: "white",
+      borderWidth: 2,
     })),
   };
 
