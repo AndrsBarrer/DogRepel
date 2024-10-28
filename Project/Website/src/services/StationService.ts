@@ -7,7 +7,7 @@ interface station {
 
 // Create an instance of Axios with a base URL if needed
 const apiClient = axios.create({
-  baseURL: "http://localhost:4000/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },

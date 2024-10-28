@@ -1,1 +1,2 @@
-npm-run-all --parallel --prefix ./Server start --prefix ./Website dev
+cd Project
+npm run dev
