@@ -27,7 +27,7 @@
         </template>
       </Column>
 
-      <Column field="age" header="Age" style="width: 10%">
+      <Column field="age" header="Age" style="width: 5%">
         <template #editor="{ data, field }">
           <InputNumber v-model="data[field]" fluid />
         </template>

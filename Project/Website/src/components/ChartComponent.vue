@@ -158,7 +158,7 @@ const setChartOptions = () => {
         },
       },
       y: {
-        min: -60,
+        min: -90,
         max: -20,
         title: {
           display: true,
