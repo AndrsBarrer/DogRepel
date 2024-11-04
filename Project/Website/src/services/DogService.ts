@@ -7,9 +7,9 @@ interface dog {
   age: Number;
 }
 
-// Create an instance of Axios with a base URL if needed
+// Create an instance of Axios
 const apiClient = axios.create({
-  baseURL: "http://localhost:4000/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },

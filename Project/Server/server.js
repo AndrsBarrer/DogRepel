@@ -105,6 +105,6 @@ const uploadMessage = async (message) => {
   }
 };
 
-express_app.listen(expressPort, () => {
-  console.log(`[✓] Express Server running on http://localhost:${expressPort}`);
+express_app.listen(expressPort, host, () => {
+  console.log(`[✓] Express Server running on http://${host}:${expressPort}`);
 });
