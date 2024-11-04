@@ -48,7 +48,19 @@ router.put("/", async (req, res) => {
   }
 });
 
-router.get("/station_settings", async (req, res) => {
+router.get("/station", async (req, res) => {
+  try {
+    const { station_id } = req.query;
+    let query = "SELECT * FROM stations WHERE station_id = ?";
+    const [result] = await db.query(query, [station_id]);
+    res.json(result);
+  } catch (err) {
+    console.error("SQL Error:", err);
+    res.status(500).json({ error: "Failed to fetch station." });
+  }
+});
+
+router.get("/station-settings", async (req, res) => {
   try {
     const [results] = await db.query("SELECT * FROM station_settings");
     res.json(results);
