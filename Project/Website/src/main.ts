@@ -19,30 +19,6 @@ import "primeicons/primeicons.css";
 const app = createApp(App);
 axios.defaults.baseURL = "http://localhost:4000";
 
-// app.use(PrimeVue, {
-//   // Default theme configuration
-//   theme: {
-//     preset: Aura,
-//     // options: {
-//     //   prefix: "p",
-//     //   darkModeSelector: "true",
-//     //   cssLayer: false,
-//     // },
-//   },
-// });
-
-// app.use(PrimeVue, {
-//   // Default theme configuration
-//   theme: {
-//     preset: Aura,
-//     // options: {
-//     //   prefix: "p",
-//     //   darkModeSelector: "true",
-//     //   cssLayer: false,
-//     // },
-//   },
-// });
-
 // Use PrimeVue first before registering components
 app.use(PrimeVue, {
   ripple: true,
