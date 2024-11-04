@@ -21,11 +21,11 @@
         </template>
       </Column>
 
-      <Column field="distance" header="Distance" style="width: 10%">
+      <!-- <Column field="distance" header="Distance" style="width: 10%">
         <template #editor="{ data, field }">
           <InputText v-model="data[field]" fluid />
         </template>
-      </Column>
+      </Column> -->
 
       <Column
         :rowEditor="true"

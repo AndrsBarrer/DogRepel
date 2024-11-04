@@ -132,67 +132,6 @@ onMounted(() => {
   setInterval(fetchDogVisits, 60000); // Repeat every 60 seconds
 });
 
-// const setChartOptions = () => {
-//   const documentStyle = getComputedStyle(document.documentElement);
-//   const textColor = documentStyle.getPropertyValue("--p-text-color");
-//   const textColorSecondary = documentStyle.getPropertyValue(
-//     "--p-text-muted-color"
-//   );
-//   const surfaceBorder = documentStyle.getPropertyValue(
-//     "--p-content-border-color"
-//   );
-
-//   return {
-//     maintainAspectRatio: false,
-//     aspectRatio: 0.6,
-//     plugins: {
-//       legend: {
-//         labels: {
-//           color: textColor,
-//         },
-//       },
-//     },
-//     scales: {
-//       x: {
-//         title: {
-//           display: true,
-//           text: "Hour of Day", // Label for the x-axis
-//           color: textColor,
-//         },
-//         ticks: {
-//           color: textColorSecondary,
-//         },
-//         grid: {
-//           color: surfaceBorder,
-//         },
-//       },
-//       y: {
-//         min: -60, // Set the fixed minimum value for the y-axis
-//         max: -20, // Set the fixed maximum value for the y-axis
-//         title: {
-//           display: true,
-//           text: "Proximity", // Label for the y-axis
-//           color: textColor,
-//         },
-//         ticks: {
-//           color: textColorSecondary,
-//           // Define the exact positions for the labels
-//           callback: function (value) {
-//             if (value === -80) return "Low"; // Lowest value
-//             if (value === -40) return "Medium"; // Mid value
-//             if (value === 0) return "High"; // Highest value
-//             return null; // Hide other values
-//           },
-//           // Force display of ticks at specific values
-//           stepSize: 40, // Ensure consistent spacing
-//         },
-//         grid: {
-//           color: surfaceBorder,
-//         },
-//       },
-//     },
-//   };
-// };
 const setChartOptions = () => {
   return {
     maintainAspectRatio: false,
@@ -243,4 +182,13 @@ const setChartOptions = () => {
     },
   };
 };
+console.clear();
+console.log(
+  "Welcome to Dog Repel! \n" +
+    "   / \\__ \n" +
+    "  (    @\\___ \n" +
+    "  /         O \n" +
+    " /   (_____/ \n" +
+    "/_____/   U"
+);
 </script>

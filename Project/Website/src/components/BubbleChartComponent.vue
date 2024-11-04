@@ -1,26 +1,28 @@
 <template>
-  <div>
-    <canvas id="bubble-chart"></canvas>
+  <div class="chart-container">
+    <canvas ref="chartCanvas"></canvas>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { onMounted, onBeforeUnmount, ref, shallowRef } from "vue";
 import DogService from "../services/DogService";
+import StationService from "../services/StationService";
 import Chart from "chart.js/auto";
 
-const chartInstance = ref(null);
+const chartCanvas = ref(null);
+// Use shallowRef for the chart instance to prevent deep reactivity
+const chartInstance = shallowRef(null);
+const updateInterval = ref(null);
 
-// Function to generate a unique HSL color based on the station_id
 const generateColor = (station_id) => {
-  const hue = (station_id * 137.508) % 360; // Golden angle approximation for unique hues
+  const hue = (station_id * 137.508) % 360;
   const rgb = hueToRGB(hue);
-  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)`; // Set opacity to 0.6
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)`;
 };
 
-// Helper function to convert hue to RGB
 const hueToRGB = (hue) => {
-  const h = hue / 360; // Normalize hue
+  const h = hue / 360;
   const r = Math.round(255 * (1 - Math.abs(2 * h - 1)));
   const g = Math.round(255 * (1 - Math.abs(2 * (h - 1 / 3) - 1)));
   const b = Math.round(255 * (1 - Math.abs(2 * (h - 2 / 3) - 1)));
@@ -29,37 +31,31 @@ const hueToRGB = (hue) => {
 
 const fetchData = async () => {
   try {
-    // Replace this with your actual service call
     const dogVisits = await DogService.getDogVisits();
-
-    // Group the data by station_id and count the frequency of visits
     const stationVisitMap = dogVisits.reduce((acc, visit) => {
       const { station_id, distance } = visit;
-
       if (!acc[station_id]) {
         acc[station_id] = { count: 0, totalDistance: 0, visits: 0 };
       }
-
-      acc[station_id].count += 1; // Count the number of visits
-      acc[station_id].totalDistance += distance; // Sum the distances
-      acc[station_id].visits += 1; // Increment the number of visits
-
+      acc[station_id].count += 1;
+      acc[station_id].totalDistance += distance;
+      acc[station_id].visits += 1;
       return acc;
     }, {});
 
-    // Format the data for the bubble chart and generate color based on station_id
-    const chartData = Object.entries(stationVisitMap).map(
-      ([station_id, info]) => ({
-        x: info.count, // Number of visits (frequency)
-        y: Math.abs(info.totalDistance / info.visits),
-        r: Math.abs(info.totalDistance / info.visits), // Average distance as bubble radius
-        station_id: station_id,
-        backgroundColor: generateColor(station_id),
-        borderColor: generateColor(station_id),
+    const chartData = await Promise.all(
+      Object.entries(stationVisitMap).map(async ([station_id, info]) => {
+        const station = await StationService.getStation(station_id);
+        return {
+          x: info.count,
+          y: Math.abs(info.totalDistance / info.visits),
+          r: Math.abs(info.totalDistance / info.visits),
+          station_name: station[0].location,
+          backgroundColor: generateColor(parseInt(station_id)),
+          borderColor: generateColor(parseInt(station_id)),
+        };
       })
     );
-
-    console.log(chartData);
     return chartData;
   } catch (error) {
     console.error("Error fetching data: ", error);
@@ -67,84 +63,127 @@ const fetchData = async () => {
   }
 };
 
-onMounted(async () => {
-  // Clear previous chart instance if it exists
-  if (chartInstance.value) {
-    chartInstance.value.destroy();
-  }
+const initChart = (data) => {
+  const ctx = chartCanvas.value?.getContext("2d");
+  if (!ctx) return null;
 
-  const ctx = document.getElementById("bubble-chart").getContext("2d");
-
-  const fetchedData = await fetchData();
-  if (fetchedData.length === 0) {
-    console.error("No data available to plot.");
-    return;
-  }
-
-  // Separate datasets for each station, dynamically color-coded
-  const data = {
-    datasets: fetchedData.map((item) => ({
-      label: `Station ${item.station_id}`, // Show the station ID in the legend
-      data: [item], // Each station's data as a separate dataset
-      backgroundColor: item.backgroundColor,
-      borderColor: "white",
-      borderWidth: 2,
-    })),
-  };
-
-  const options = {
-    scales: {
-      x: {
-        type: "linear",
-        grid: {
-          color: "rgba(255, 255, 255, 0.5)", // White grid lines on the X-axis
-        },
-        title: {
-          display: true,
-          text: "Number of Visits (Frequency)",
-        },
-        min: 0,
-        max: 300,
+  // Convert the reactive data to plain objects
+  const datasets = data.map((item) => ({
+    label: String(item.station_name),
+    data: [
+      {
+        x: Number(item.x),
+        y: Number(item.y),
+        r: Number(item.r),
       },
-      y: {
-        type: "linear",
-        grid: {
-          color: "rgba(255, 255, 255, 0.1)", // White grid lines on the Y-axis
-        },
-        title: {
-          display: true,
-          text: "Average abs. RSSI (Distance)",
-        },
-        min: 0,
-        max: 100,
-      },
-    },
-    plugins: {
-      legend: {
-        display: true, // Show the legend with station colors
-        labels: {
-          color: "white", // Set legend text color to white
-        },
-      },
-    },
-  };
+    ],
+    backgroundColor: String(item.backgroundColor),
+    borderColor: "white",
+    borderWidth: 2,
+  }));
 
-  // Destroy previous chart instance if it exists
-  if (chartInstance.value) {
-    chartInstance.value.destroy();
-  }
-
-  chartInstance.value = new Chart(ctx, {
+  const chartConfig = {
     type: "bubble",
-    data: data,
-    options: options,
-  });
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          type: "linear",
+          grid: { color: "rgba(255, 255, 255, 0.5)" },
+          title: { display: true, text: "Number of Visits (Frequency)" },
+          min: 0,
+          max: 300,
+        },
+        y: {
+          type: "linear",
+          grid: { color: "rgba(255, 255, 255, 0.1)" },
+          title: { display: true, text: "Average abs. RSSI (Distance)" },
+          min: 0,
+          max: 100,
+        },
+      },
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: "white" },
+        },
+      },
+    },
+  };
+
+  return new Chart(ctx, chartConfig);
+};
+
+const updateChartData = (chart, newData) => {
+  if (!chart) return;
+
+  // Convert the reactive data to plain objects
+  const datasets = newData.map((item) => ({
+    label: String(item.station_name),
+    data: [
+      {
+        x: Number(item.x),
+        y: Number(item.y),
+        r: Number(item.r),
+      },
+    ],
+    backgroundColor: String(item.backgroundColor),
+    borderColor: "white",
+    borderWidth: 2,
+  }));
+
+  chart.data.datasets = datasets;
+  chart.update("none");
+};
+
+const fetchBubbleInfo = async () => {
+  try {
+    const fetchedData = await fetchData();
+    if (!fetchedData.length) {
+      console.error("No data available to plot.");
+      return;
+    }
+
+    if (!chartInstance.value) {
+      const newChart = initChart(fetchedData);
+      if (newChart) {
+        chartInstance.value = newChart;
+      }
+    } else {
+      updateChartData(chartInstance.value, fetchedData);
+    }
+  } catch (error) {
+    console.error("Error updating chart:", error);
+  }
+};
+
+onMounted(async () => {
+  await fetchBubbleInfo();
+
+  updateInterval.value = setInterval(async () => {
+    await fetchBubbleInfo();
+  }, 3000);
+});
+
+onBeforeUnmount(() => {
+  if (updateInterval.value) {
+    clearInterval(updateInterval.value);
+    updateInterval.value = null;
+  }
+
+  if (chartInstance.value) {
+    chartInstance.value.destroy();
+    chartInstance.value = null;
+  }
 });
 </script>
 
 <style scoped>
-canvas {
-  max-width: 100%;
-  max-height: 400px;
+.chart-container {
+  position: relative;
+  height: 400px;
+  width: 100%;
 }
 </style>
