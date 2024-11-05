@@ -30,7 +30,7 @@ const fetchVisits = async () => {
       // Get the date first
       const day = date.getDay().toString().padStart(2, "0");
       const month = date.getMonth().toString().padStart(2, "0");
-      const year = date.getYear().toString().padStart(2, "0");
+      const year = date.getFullYear().toString().padStart(2, "0");
 
       // Get the time next
       let hours = date.getHours();
