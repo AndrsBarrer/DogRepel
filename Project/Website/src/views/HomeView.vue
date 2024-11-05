@@ -6,10 +6,12 @@
       <BubbleChartComponent />
 
       <div class="tables-wrapper">
+        <h1 class="tables-label">Dog and Station Info</h1>
         <div class="tables">
           <EditDogsTable />
           <EditStationsTable />
         </div>
+        <EventsDataTable></EventsDataTable>
       </div>
     </div>
   </main>
@@ -20,6 +22,7 @@ import ChartComponent from "../components/ChartComponent.vue";
 import BubbleChartComponent from "../components/BubbleChartComponent.vue";
 import EditDogsTable from "../components/EditDogsTable.vue";
 import EditStationsTable from "../components/EditStationsTable.vue";
+import EventsDataTable from "@/components/EventsDataTable.vue";
 </script>
 
 <style scoped>
@@ -32,6 +35,12 @@ main {
 
   .tables-wrapper {
     margin: 0 2rem; /* Apply margin to the wrapper */
+
+    .tables-label {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 25px;
+    }
   }
 
   .tables {
