@@ -135,7 +135,22 @@ router.put("/dog_settings", async (req, res) => {
 
 router.get("/dog_visits", async (req, res) => {
   try {
-    const [results] = await db.query("SELECT * FROM dog_visits");
+    //const [results] = await db.query("SELECT * FROM dog_visits");
+    const [results] = await db.query(`
+      SELECT 
+          dv.visit_id, 
+          dv.dog_id, 
+          dv.station_id, 
+          dv.visit_time, 
+          dv.distance, 
+          d.name AS dog_name, 
+          s.location
+      FROM 
+          dog_visits dv
+      JOIN 
+          dogs d ON dv.dog_id = d.dog_id
+      JOIN 
+          stations s ON dv.station_id = s.station_id;`);
     res.status(200).json(results);
   } catch (err) {
     console.error("SQL Error:", err);
