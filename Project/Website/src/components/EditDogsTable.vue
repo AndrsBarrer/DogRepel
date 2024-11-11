@@ -7,35 +7,37 @@
       dataKey="dog_id"
       @row-edit-save="onRowEditSave"
       :pt="{
-        table: { style: 'max-width: 100%' },
+        table: { style: 'min-width: 15rem' },
         column: {
           bodycell: ({ state }) => ({
-            style: state['d_editing'] && 'max-width: 100%',
+            style: state['d_editing']
+              ? 'overflow: hidden;'
+              : 'overflow: hidden;',
           }),
         },
       }"
     >
-      <Column field="name" header="Name" style="width: 10%">
+      <Column field="name" header="Name" style="width: 80px">
         <template #editor="{ data, field }">
-          <InputText v-model="data[field]" fluid />
+          <InputText v-model="data[field]" class="edit-input" />
         </template>
       </Column>
 
-      <Column field="breed" header="Breed" style="width: 10%">
+      <Column field="breed" header="Breed" style="width: 100px">
         <template #editor="{ data, field }">
-          <InputText v-model="data[field]" fluid />
+          <InputText v-model="data[field]" class="edit-input" />
         </template>
       </Column>
 
-      <Column field="age" header="Age" style="width: 5%">
+      <Column field="age" header="Age" style="width: 40px">
         <template #editor="{ data, field }">
-          <InputNumber v-model="data[field]" fluid />
+          <InputNumber v-model="data[field]" class="edit-input" />
         </template>
       </Column>
 
       <Column
         :rowEditor="true"
-        style="width: 1%; min-width: 8rem"
+        style="width: 80px"
         bodyStyle="text-align:center"
       ></Column>
     </DataTable>
@@ -50,11 +52,18 @@ let intervalId: NodeJS.Timeout;
 const dogs = ref([]);
 const editingRows = ref([]);
 
+// Used to know whether interface should be updated or not,
+// to not interrupt user when they are editing the table
+const dogsReference = ref({});
+
 // Function to fetch and update dogs data
 const fetchDogs = async () => {
   try {
     const data = await DogService.getDogs();
-    dogs.value = data.results;
+    if (JSON.stringify(dogsReference.value) !== JSON.stringify(data.results)) {
+      dogs.value = data.results;
+      dogsReference.value = dogs.value;
+    }
   } catch (error) {
     console.error("Error fetching dogs:", error);
   }
@@ -63,7 +72,7 @@ const fetchDogs = async () => {
 // Fetch data when component is mounted
 onMounted(() => {
   fetchDogs(); // Initial fetch
-  intervalId = setInterval(fetchDogs, 5000); // Poll every 5 seconds
+  intervalId = setInterval(fetchDogs, 2000); // Poll every 5 seconds
 });
 
 // Cleanup interval on component unmount
@@ -86,3 +95,32 @@ const onRowEditSave = async (event) => {
   }
 };
 </script>
+
+<style scoped>
+:deep(.edit-input) {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  background-color: #1e2530;
+  border-radius: 6px;
+  border: 1px solid #2a323d;
+  color: white;
+  padding: 0.5rem;
+}
+
+:deep(.p-inputnumber-input) {
+  width: 100% !important;
+  max-width: 100% !important;
+  background-color: #1e2530;
+  border-radius: 6px;
+  border: 1px solid #2a323d;
+  color: white;
+  padding: 0.5rem;
+  outline: none;
+}
+
+:deep(.p-inputnumber) {
+  border: none;
+  background: none;
+}
+</style>

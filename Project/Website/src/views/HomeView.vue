@@ -2,11 +2,12 @@
 <template>
   <main>
     <div class="page-container">
+      <h1 class="header-label">Dashboard</h1>
       <ChartComponent />
       <BubbleChartComponent />
 
       <div class="tables-wrapper">
-        <h1 class="tables-label">Dog and Station Info</h1>
+        <h1 class="header-label">Dog and Station Info</h1>
         <div class="tables">
           <EditDogsTable />
           <EditStationsTable />
@@ -33,14 +34,14 @@ main {
   display: flex;
   flex-direction: column;
 
+  .header-label {
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 25px;
+  }
+
   .tables-wrapper {
     margin: 0 2rem; /* Apply margin to the wrapper */
-
-    .tables-label {
-      text-align: center;
-      margin-top: 2rem;
-      font-size: 25px;
-    }
   }
 
   .tables {

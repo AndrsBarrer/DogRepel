@@ -8,8 +8,8 @@
       :rowsPerPageOptions="[5, 10, 20, 50]"
       tableStyle="min-width: 50rem"
     >
-      <Column field="dog_id" header="Dog" style="width: 25%"></Column>
-      <Column field="station_id" header="Station" style="width: 25%"></Column>
+      <Column field="dog_name" header="Dog" style="width: 25%"></Column>
+      <Column field="location" header="Station" style="width: 25%"></Column>
       <Column field="formattedTime" header="Time" style="width: 25%"></Column>
     </DataTable>
   </div>
