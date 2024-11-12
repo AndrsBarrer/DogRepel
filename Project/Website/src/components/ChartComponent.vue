@@ -13,100 +13,126 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from "vue";
 import DogService from "../services/DogService";
+import { Dog, Visit } from "../services/DogService";
 import StationService from "../services/StationService";
+import { Station, DogEntries } from "../services/StationService";
 
 const chartData = ref();
 const chartOptions = ref();
 
+// Used to know if the chart should be updated or not, stores the gotten value to compare to new value
+const oldDogVisits = ref({});
+
+interface GroupedVisit {
+  dog_id: number;
+  station_id: number;
+  visits: Visit[];
+}
+
 async function fetchDogVisits() {
   try {
     // Fetch dog_visits data from the API
-    const dogVisits = await DogService.getDogVisits();
+    const dogVisits = await DogService.getDogVisits().then(
+      (result) => result.data
+    );
+    if (JSON.stringify(dogVisits) !== JSON.stringify(oldDogVisits.value)) {
+      oldDogVisits.value = dogVisits;
 
-    // Fetch dog details (names) from the API
-    const dogs = await DogService.getDogs();
+      // Fetch dog details (names) from the API
+      const dogs = await DogService.getDogs();
 
-    // Fetch station details (names) from the API
-    const stations = await StationService.getStations();
+      // Fetch station details (names) from the API
+      const stations = await StationService.getStations();
 
-    // Map dog names to dog_ids
-    const dogNamesMap = dogs.results.reduce((map, dog) => {
-      map[dog.dog_id] = dog.name;
-      return map;
-    }, {});
+      // Map dog names to dog_ids
+      const dogNamesMap = dogs.results.reduce(
+        (dogEntries: DogEntries, dog: Dog) => {
+          if (dog.dog_id) {
+            dogEntries[dog.dog_id] = dog.name;
+            return dogEntries;
+          }
+        },
+        {}
+      );
 
-    // Map station names to station_ids
-    const stationNamesMap = stations.results.reduce((map, station) => {
-      map[station.station_id] = station.location;
-      return map;
-    }, {});
+      // Map station names to station_ids
+      const stationNamesMap = stations.results.reduce(
+        (dogEntries: DogEntries, station: Station) => {
+          dogEntries[station.station_id] = station.location;
+          return dogEntries;
+        },
+        {}
+      );
 
-    // Group visits by dog_id and station_id
-    const groupedVisits = {};
-    dogVisits.forEach((visit) => {
-      const key = `${visit.dog_id}-${visit.station_id}`;
-      if (!groupedVisits[key]) {
-        groupedVisits[key] = {
-          dog_id: visit.dog_id,
-          station_id: visit.station_id,
-          visits: [],
-        };
-      }
-      groupedVisits[key].visits.push(visit);
-    });
-
-    // Prepare datasets for each dog-station combination
-    const datasets = Object.keys(groupedVisits).map((key) => {
-      const group = groupedVisits[key];
-
-      // Map visit times to "HH:MM" format
-      const visitTimes = group.visits.map((visit) => {
-        const date = new Date(visit.visit_time);
-        const hours = String(date.getHours()).padStart(2, "0"); // Ensure two-digit format
-        const minutes = String(date.getMinutes()).padStart(2, "0"); // Ensure two-digit format
-        return `${hours}:${minutes}`; // Combine hours and minutes
+      // Group visits by dog_id and station_id
+      const groupedVisits: { [key: string]: GroupedVisit } = {};
+      dogVisits.forEach((visit: Visit) => {
+        const key = `${visit.dog_id}-${visit.station_id}`;
+        if (!groupedVisits[key]) {
+          groupedVisits[key] = {
+            dog_id: visit.dog_id,
+            station_id: visit.station_id,
+            visits: [],
+          };
+        }
+        groupedVisits[key].visits.push(visit);
       });
 
-      const visitDistances = group.visits.map((visit) => visit.distance);
+      // Prepare datasets for each dog-station combination
+      const datasets = Object.keys(groupedVisits).map((key) => {
+        const group = groupedVisits[key];
 
-      // Fetch the dog's name and station's name
-      const dogName = dogNamesMap[group.dog_id] || `Dog ${group.dog_id}`;
-      const stationName =
-        stationNamesMap[group.station_id] || `Station ${group.station_id}`;
+        // Map visit times to "HH:MM" format
+        group.visits.map((visit: Visit) => {
+          const date = new Date(visit.visit_time);
+          const hours = String(date.getHours()).padStart(2, "0"); // Ensure two-digit format
+          const minutes = String(date.getMinutes()).padStart(2, "0"); // Ensure two-digit format
+          return `${hours}:${minutes}`; // Combine hours and minutes
+        });
 
-      return {
-        label: `${dogName} at ${stationName}`, // Use dog's name and station's name
-        data: visitDistances,
-        fill: false,
-        borderColor: getColorForDogStation(dogName, stationName), // Color based on names
-        tension: 0.4,
+        const visitDistances = group.visits.map(
+          (visit: Visit) => visit.distance
+        );
+
+        // Fetch the dog's name and station's name
+        const dogName = dogNamesMap[group.dog_id] || `Dog ${group.dog_id}`;
+        const stationName =
+          stationNamesMap[group.station_id] || `Station ${group.station_id}`;
+
+        return {
+          label: `${dogName} at ${stationName}`, // Use dog's name and station's name
+          data: visitDistances,
+          fill: false,
+          borderColor: getColorForDogStation(dogName, stationName), // Color based on names
+          tension: 0.4,
+        };
+      });
+
+      // Set the chart data based on grouped visits
+      chartData.value = {
+        labels: [
+          ...new Set(
+            dogVisits.map((visit: Visit) => {
+              const date = new Date(visit.visit_time);
+              const hours = String(date.getHours()).padStart(2, "0");
+              const minutes = String(date.getMinutes()).padStart(2, "0");
+              return `${hours}:${minutes}`; // Unique time points in "HH:MM"
+            })
+          ),
+        ], // Unique time points for x-axis
+        datasets: datasets,
       };
-    });
-
-    // Set the chart data based on grouped visits
-    chartData.value = {
-      labels: [
-        ...new Set(
-          dogVisits.map((visit) => {
-            const date = new Date(visit.visit_time);
-            const hours = String(date.getHours()).padStart(2, "0");
-            const minutes = String(date.getMinutes()).padStart(2, "0");
-            return `${hours}:${minutes}`; // Unique time points in "HH:MM"
-          })
-        ),
-      ], // Unique time points for x-axis
-      datasets: datasets,
-    };
+    }
   } catch (error) {
     console.error("Error fetching dog visits:", error);
   }
 }
 
 // Function to generate colors based on Dog Name and Station Name
-function getColorForDogStation(dogName, stationName) {
+function getColorForDogStation(dogName: string, stationName: string) {
   // Concatenate the dog's name and station's name
   const combinedName = `${dogName}-${stationName}`;
 
@@ -129,7 +155,7 @@ onMounted(() => {
 
   // Fetch and update chart data every minute
   fetchDogVisits(); // Initial fetch
-  setInterval(fetchDogVisits, 60000); // Repeat every 60 seconds
+  setInterval(fetchDogVisits, 2000); // Repeat every 2 seconds
 });
 
 const setChartOptions = () => {
@@ -167,7 +193,7 @@ const setChartOptions = () => {
         },
         ticks: {
           color: "white", // Set y-axis tick color to white
-          callback: function (value) {
+          callback: function (value: number) {
             if (value === -80) return "Low";
             if (value === -40) return "Medium";
             if (value === 0) return "High";

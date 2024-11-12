@@ -1,8 +1,12 @@
 import axios from "axios";
 
-interface station {
-  station_id: Number;
-  location: String;
+export interface Station {
+  station_id: number;
+  location: string;
+}
+
+export interface DogEntries {
+  [id: number]: string; // index signature: key is a number, value is a string
 }
 
 // Create an instance of Axios with a base URL if needed
@@ -24,7 +28,7 @@ const StationService = {
     }
   },
 
-  async getStation(station_id) {
+  async getStation(station_id: number) {
     try {
       const response = await apiClient.get("/stations/station", {
         params: { station_id },
@@ -60,7 +64,7 @@ const StationService = {
     }
   },
 
-  async updateStationInfo(data: station) {
+  async updateStationInfo(data: Station) {
     try {
       await apiClient.put("/stations", data);
     } catch (error) {

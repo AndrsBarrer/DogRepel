@@ -4,7 +4,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, shallowRef } from "vue";
 import DogService from "../services/DogService";
 import StationService from "../services/StationService";
@@ -15,13 +15,13 @@ const chartCanvas = ref(null);
 const chartInstance = shallowRef(null);
 const updateInterval = ref(null);
 
-const generateColor = (station_id) => {
+const generateColor = (station_id: number) => {
   const hue = (station_id * 137.508) % 360;
   const rgb = hueToRGB(hue);
   return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)`;
 };
 
-const hueToRGB = (hue) => {
+const hueToRGB = (hue: number) => {
   const h = hue / 360;
   const r = Math.round(255 * (1 - Math.abs(2 * h - 1)));
   const g = Math.round(255 * (1 - Math.abs(2 * (h - 1 / 3) - 1)));
@@ -31,7 +31,9 @@ const hueToRGB = (hue) => {
 
 const fetchData = async () => {
   try {
-    const dogVisits = await DogService.getDogVisits();
+    const dogVisits = await DogService.getDogVisits().then(
+      (result) => result.data
+    );
     const stationVisitMap = dogVisits.reduce((acc, visit) => {
       const { station_id, distance } = visit;
       if (!acc[station_id]) {
