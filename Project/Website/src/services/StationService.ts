@@ -5,10 +5,6 @@ export interface Station {
   location: string;
 }
 
-export interface DogEntries {
-  [id: number]: string; // index signature: key is a number, value is a string
-}
-
 // Create an instance of Axios with a base URL if needed
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
