@@ -34,27 +34,29 @@ const fetchData = async () => {
     const dogVisits = await DogService.getDogVisits().then(
       (result) => result.data
     );
+
     const stationVisitMap = dogVisits.reduce((acc, visit) => {
-      const { station_id, distance } = visit;
-      if (!acc[station_id]) {
-        acc[station_id] = { count: 0, totalDistance: 0, visits: 0 };
+      const { location, distance } = visit;
+
+      if (!acc[location]) {
+        acc[location] = { count: 0, totalDistance: 0, visits: 0 };
       }
-      acc[station_id].count += 1;
-      acc[station_id].totalDistance += distance;
-      acc[station_id].visits += 1;
+      acc[location].count += 1;
+      acc[location].totalDistance += distance;
+      acc[location].visits += 1;
       return acc;
     }, {});
 
     const chartData = await Promise.all(
-      Object.entries(stationVisitMap).map(async ([station_id, info]) => {
-        const station = await StationService.getStation(station_id);
+      Object.entries(stationVisitMap).map(async ([location, info]) => {
+        const station = await StationService.getStation(location);
         return {
           x: info.count,
           y: Math.abs(info.totalDistance / info.visits),
           r: Math.abs(info.totalDistance / info.visits),
           station_name: station[0].location,
-          backgroundColor: generateColor(parseInt(station_id)),
-          borderColor: generateColor(parseInt(station_id)),
+          backgroundColor: generateColor(parseInt(location)),
+          borderColor: generateColor(parseInt(location)),
         };
       })
     );

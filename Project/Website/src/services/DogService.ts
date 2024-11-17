@@ -38,7 +38,6 @@ const DogService = {
 
   async registerDog(data: Dog) {
     try {
-      console.log("trying2...");
       await apiClient.post("/dogs", data);
     } catch (error) {
       console.log("An error occurred inserting dog: ", error);
@@ -49,7 +48,6 @@ const DogService = {
   async getDogVisits() {
     try {
       const response = await apiClient.get("/dogs/dog_visits");
-      //return response.data;
       return response;
     } catch (error) {
       console.error("Error fetching dog visits:", error);

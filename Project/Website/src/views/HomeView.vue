@@ -4,7 +4,7 @@
     <div class="page-container">
       <h1 class="header-label">Dashboard</h1>
       <ChartComponent />
-      <BubbleChartComponent />
+      <!-- <BubbleChartComponent /> -->
 
       <div class="tables-wrapper">
         <h1 class="header-label">Dog and Station Info</h1>
