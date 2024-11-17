@@ -20,7 +20,7 @@ import { Dog, Visit } from "../services/DogService";
 import StationService from "../services/StationService";
 import { Station } from "../services/StationService";
 
-let legendVisibility = {}; // To store visibility state
+let legendVisibility = reactive({}); // To store visibility state
 
 const chartData = ref();
 const chartOptions = ref();
@@ -31,7 +31,6 @@ let reactiveChartOptions = reactive({
     plugins: {
       legend: {
         onClick: function (event, legendItem) {
-          console.log(legendItem);
           // Toggle visibility and save state
           const datasetIndex = legendItem.datasetIndex;
 
@@ -63,7 +62,7 @@ let reactiveChartOptions = reactive({
       },
       y: {
         min: -90,
-        max: -20,
+        max: -10,
         title: {
           display: true,
           text: "Proximity",
@@ -131,7 +130,6 @@ async function fetchDogVisits() {
         return {
           label: `${dogName} at ${location}`,
           data: dataPoints,
-          fill: false,
           borderColor: getColorForDogStation(dogName, location),
           tension: 0.4,
           hidden: !isVisible, // Apply saved visibility state

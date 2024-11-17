@@ -36,20 +36,18 @@ const StationService = {
     }
   },
 
-  /*
-  router.get("/station", async (req, res) => {
-  try {
-    const { station_id } = req.body;
-    let query = "SELECT * FROM stations WHERE station_id = ?";
-    const [result] = await db.query(query, [station_id]);
-    res.json(result);
-  } catch (err) {
-    console.error("SQL Error:", err);
-    res.status(500).json({ error: "Failed to fetch station." });
-  }
-});
+  async getStationByLocation(location: string) {
+    try {
+      const response = await apiClient.get("/stations/stationLocation", {
+        params: { location },
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching location:", error);
+      throw error;
+    }
+  },
 
-  */
   async getStationSettings() {
     try {
       const response = await apiClient.get("/stations/station_settings");

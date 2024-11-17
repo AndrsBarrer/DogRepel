@@ -3,15 +3,17 @@
   <main>
     <div class="page-container">
       <h1 class="header-label">Dashboard</h1>
+      <h1 class="small-title">Events this day</h1>
       <ChartComponent />
-      <!-- <BubbleChartComponent /> -->
+      <BubbleChartComponent />
 
       <div class="tables-wrapper">
-        <h1 class="header-label">Dog and Station Info</h1>
+        <h1 class="small-title">Dog and Station Info</h1>
         <div class="tables">
           <EditDogsTable />
           <EditStationsTable />
         </div>
+        <h1 class="small-title">All events</h1>
         <EventsDataTable></EventsDataTable>
       </div>
     </div>
@@ -30,6 +32,13 @@ import EventsDataTable from "@/components/EventsDataTable.vue";
 main {
   padding: 20px;
 }
+
+.small-title {
+  text-align: center;
+  margin-top: 2rem;
+  font-size: 25px;
+}
+
 .page-container {
   display: flex;
   flex-direction: column;
@@ -37,7 +46,7 @@ main {
   .header-label {
     text-align: center;
     margin-top: 1rem;
-    font-size: 25px;
+    font-size: 35px;
   }
 
   .tables-wrapper {

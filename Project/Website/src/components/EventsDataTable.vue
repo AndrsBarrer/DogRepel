@@ -1,5 +1,4 @@
 <template>
-  <h1 class="title">Visits at stations</h1>
   <div class="card">
     <DataTable
       :value="visits"

@@ -5,8 +5,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, shallowRef } from "vue";
-import DogService from "../services/DogService";
+import { onMounted, onBeforeUnmount, ref, shallowRef, reactive } from "vue";
+import DogService, { Visit } from "../services/DogService";
 import StationService from "../services/StationService";
 import Chart from "chart.js/auto";
 
@@ -14,6 +14,7 @@ const chartCanvas = ref(null);
 // Use shallowRef for the chart instance to prevent deep reactivity
 const chartInstance = shallowRef(null);
 const updateInterval = ref(null);
+const legendVisibility = reactive({});
 
 const generateColor = (station_id: number) => {
   const hue = (station_id * 137.508) % 360;
@@ -35,7 +36,7 @@ const fetchData = async () => {
       (result) => result.data
     );
 
-    const stationVisitMap = dogVisits.reduce((acc, visit) => {
+    const stationVisitMap = dogVisits.reduce((acc, visit: Visit) => {
       const { location, distance } = visit;
 
       if (!acc[location]) {
@@ -47,20 +48,22 @@ const fetchData = async () => {
       return acc;
     }, {});
 
-    const chartData = await Promise.all(
+    return await Promise.all(
       Object.entries(stationVisitMap).map(async ([location, info]) => {
-        const station = await StationService.getStation(location);
+        const station = await StationService.getStationByLocation(location);
+        const stationId = station[0].station_id;
+
         return {
+          stationId,
           x: info.count,
           y: Math.abs(info.totalDistance / info.visits),
           r: Math.abs(info.totalDistance / info.visits),
           station_name: station[0].location,
-          backgroundColor: generateColor(parseInt(location)),
-          borderColor: generateColor(parseInt(location)),
+          backgroundColor: generateColor(stationId),
+          borderColor: generateColor(stationId),
         };
       })
     );
-    return chartData;
   } catch (error) {
     console.error("Error fetching data: ", error);
     return [];
@@ -79,6 +82,7 @@ const initChart = (data) => {
         x: Number(item.x),
         y: Number(item.y),
         r: Number(item.r),
+        stationId: item.stationId,
       },
     ],
     backgroundColor: String(item.backgroundColor),
@@ -98,7 +102,7 @@ const initChart = (data) => {
           grid: { color: "rgba(255, 255, 255, 0.5)" },
           title: { display: true, text: "Number of Visits (Frequency)" },
           min: 0,
-          max: 300,
+          max: 1000,
         },
         y: {
           type: "linear",
@@ -110,6 +114,19 @@ const initChart = (data) => {
       },
       plugins: {
         legend: {
+          onClick: function (event, legendItem) {
+            const datasetIndex = legendItem.datasetIndex; // works
+            const dataset = this.chart.data.datasets[datasetIndex]; // works
+            const stationId = dataset.data[0].stationId; //works
+
+            const isVisible = !this.chart.isDatasetVisible(datasetIndex); // works
+            // Update visibility state
+            legendVisibility[stationId] = isVisible;
+
+            // Toggle visibility in the chart
+            this.chart.setDatasetVisibility(datasetIndex, isVisible);
+            this.chart.update();
+          },
           display: true,
           labels: { color: "white" },
         },
@@ -123,20 +140,24 @@ const initChart = (data) => {
 const updateChartData = (chart, newData) => {
   if (!chart) return;
 
-  // Convert the reactive data to plain objects
-  const datasets = newData.map((item) => ({
-    label: String(item.station_name),
-    data: [
-      {
-        x: Number(item.x),
-        y: Number(item.y),
-        r: Number(item.r),
-      },
-    ],
-    backgroundColor: String(item.backgroundColor),
-    borderColor: "white",
-    borderWidth: 2,
-  }));
+  const datasets = newData.map((item) => {
+    const isVisible = legendVisibility[item.stationId] !== false; // Respect visibility state
+    return {
+      label: item.station_name,
+      data: [
+        {
+          stationId: item.stationId,
+          x: item.x,
+          y: item.y,
+          r: item.r,
+        },
+      ],
+      backgroundColor: item.backgroundColor,
+      borderColor: "white",
+      borderWidth: 2,
+      hidden: !isVisible, // Apply visibility state
+    };
+  });
 
   chart.data.datasets = datasets;
   chart.update("none");
