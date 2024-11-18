@@ -1,4 +1,3 @@
-// dogService.js
 const db = require("../db");
 
 const getAllDogs = async () => {

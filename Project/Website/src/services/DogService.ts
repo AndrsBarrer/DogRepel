@@ -1,10 +1,20 @@
 import axios from "axios";
 
-interface dog {
-  dog_id?: Number;
-  name: String;
-  breed: String;
-  age: Number;
+export interface Dog {
+  dog_id?: number;
+  name: string;
+  breed: string;
+  age: number;
+}
+
+export interface Visit {
+  distance: number;
+  dog_id: number;
+  dog_name: string;
+  location: string;
+  station_id: number;
+  visit_id: number;
+  visit_time: string;
 }
 
 // Create an instance of Axios
@@ -26,9 +36,8 @@ const DogService = {
     }
   },
 
-  async registerDog(data: dog) {
+  async registerDog(data: Dog) {
     try {
-      console.log("trying2...");
       await apiClient.post("/dogs", data);
     } catch (error) {
       console.log("An error occurred inserting dog: ", error);
@@ -39,14 +48,14 @@ const DogService = {
   async getDogVisits() {
     try {
       const response = await apiClient.get("/dogs/dog_visits");
-      return response.data;
+      return response;
     } catch (error) {
       console.error("Error fetching dog visits:", error);
       throw error;
     }
   },
 
-  async updateDogInfo(data: dog) {
+  async updateDogInfo(data: Dog) {
     try {
       await apiClient.put("/dogs", data);
     } catch (error) {

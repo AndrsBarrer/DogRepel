@@ -16,5 +16,5 @@
       "path": "./tsconfig.node.json"
     }
   ],
-  "composite": true // Add this line
+  "composite": true
 }
