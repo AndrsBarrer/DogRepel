@@ -93,7 +93,7 @@ void tcp_client_task(void *pvParameters)
             else if (len > 0)
             {
                 rx_buffer[len] = '\0'; // Null-terminate whatever we received and treat like a string
-                ESP_LOGI(TAG, "Received %d bytes from %s: %s", len, server_ip, rx_buffer);
+                ESP_LOGI(TAG, "[!] Received %d bytes from %s: %s", len, server_ip, rx_buffer);
 
                 // Pass what was received to be handled
                 handleDeviceCommand(rx_buffer);
@@ -114,110 +114,108 @@ void tcp_client_task(void *pvParameters)
     vTaskDelete(NULL);
 }
 
+// Helper function to open, write, commit, and close the NVS handle in one go
+esp_err_t set_connection_type_int(const char *key, int value)
+{
+    nvs_handle_t my_handle;
+    esp_err_t err = nvs_open(NVS_NAMESPACE_CONNECTION, NVS_READWRITE, &my_handle);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to open NVS handle: %s", esp_err_to_name(err));
+        nvs_close(my_handle); // Ensure handle is closed even if error occurs
+        return err;
+    }
+
+    // Set the value in NVS
+    err = nvs_set_i32(my_handle, key, value);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to set %d value, err: %s", value, esp_err_to_name(err));
+        nvs_close(my_handle); // Ensure handle is closed even if error occurs
+        return err;
+    }
+
+    // Commit the change
+    err = nvs_commit(my_handle);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to commit %d value, err: %s", value, esp_err_to_name(err));
+        nvs_close(my_handle); // Ensure handle is closed even if error occurs
+        return err;
+    }
+
+    // Close the NVS handle
+    nvs_close(my_handle);
+    return ESP_OK;
+}
+
+typedef struct
+{
+    int poorConnection;
+    int decentConnection;
+    int goodConnection;
+} connection_t;
+
+connection_t connection = {
+    .poorConnection = -70,
+    .decentConnection = -50,
+    .goodConnection = -30,
+};
+
 bool handleDeviceCommand(char *rx_buffer)
 {
-    // DogRepelEvent-StationMAC-distance
+    int err;
 
+    // DogRepelEvent/distance
     // Process the received string to get tokens
-    char **tokens = tokenizeString(rx_buffer, "-");
+    char **tokens = tokenizeString(rx_buffer, "/");
 
-    printf("tokens: %s %s %s", tokens[1], tokens[2], tokens[3]);
-    fflush(stdout);
-    // // Compare the MAC of the device to ensure the message is for the device
-    // if (!strcmp(, )
-    // {
-    //     ESP_LOGI(TAG, "Valid command has been received");
-    //     // Reading
-    //     if (!strcmp(tokens[2], "R"))
-    //     {
-    //         // Read the value from the LED
-    //         if (!strcmp(tokens[3], "L"))
-    //         {
-    //             ESP_LOGI(TAG, "Reading the LEDs value...");
-    //             valueLED = gpio_get_level(LED);
-    //             snprintf(tx_buffer, sizeBuffer, "ACK:%d", valueLED);
-    //             validOp = true;
-    //         }
+    if (!tokens)
+    {
+        printf("Failed to tokenize string.\n");
+        return false;
+    }
 
-    //         // Read the value from the ADC
-    //         else if (!strcmp(tokens[3], "A"))
-    //         {
-    //             ESP_LOGI(TAG, "Reading the ADCs value...");
-    //             valueADC = ADC1_Ch3_Read();
-    //             snprintf(tx_buffer, sizeBuffer, "ACK:%d", valueADC);
-    //             validOp = true;
-    //         }
+    // Make what was received an integer
+    int distanceAllowed = atoi(tokens[1]);
 
-    //         // Read the dev id from the device that was set
-    //         else if (!strcmp(tokens[3], "DEV"))
-    //         {
-    //             nvs_handle_t my_handle;
-    //             err = nvs_open("wifi_storage", NVS_READONLY, &my_handle);
-    //             if (err != ESP_OK)
-    //             {
-    //                 ESP_LOGI(TAG, "Error (%s) opening NVS handle!\n", esp_err_to_name(err));
-    //             }
-    //             else
-    //             {
-    //                 ESP_LOGI(TAG, "Attempting to retrieve\n");
-    //                 // Retrieve dev id from NVS
-    //                 err = nvs_get_str(my_handle, "receivedName", returnStorage, &returnStorage_len);
-
-    //                 if (err != ESP_OK)
-    //                 {
-    //                     ESP_LOGI(TAG, "Failed to read dev ID from NVS: %s\n", esp_err_to_name(err));
-    //                     snprintf(tx_buffer, sizeBuffer, "NACK");
-    //                 }
-    //                 else
-    //                 {
-    //                     snprintf(tx_buffer, sizeBuffer, "ACK:%s", returnStorage);
-    //                     validOp = true;
-    //                 }
-    //             }
-    //             nvs_close(my_handle);
-    //         }
-    //     }
-    //     // Writing
-    //     else if (!strcmp(tokens[2], "W"))
-    //     {
-    //         if (!strcmp(tokens[3], "L"))
-    //         {
-    //             if (!strcmp(tokens[4], "0"))
-    //             {
-    //                 ESP_LOGI(TAG, "Turning the LED off...");
-    //                 gpio_set_level(LED, 0);
-    //                 snprintf(tx_buffer, sizeBuffer, "ACK:%d", gpio_get_level(LED));
-    //                 validOp = true;
-    //             }
-    //             else if (!strcmp(tokens[4], "1"))
-    //             {
-    //                 ESP_LOGI(TAG, "Turning the LED on...");
-    //                 gpio_set_level(LED, 1);
-    //                 snprintf(tx_buffer, sizeBuffer, "ACK:1");
-    //                 validOp = true;
-    //             }
-    //         }
-
-    //         // Facilitates NVS clearing, extra command to make it easier
-    //     }
-    //     else if (!strcmp(tokens[2], "RESET"))
-    //     {
-    //         // Erase everything that is in the nvs storage
-    //         ESP_LOGI(TAG, "Erasing everything in NVS...");
-    //         err = nvs_flash_erase();
-    //         if (err == ESP_OK)
-    //         {
-    //             ESP_LOGI(TAG, "NVS erased! Rebooting.");
-    //             esp_restart();
-    //         }
-    //     }
-    // }
-
-    // // If there was no valid operation, add a NACK as a response
-    // if (!validOp)
-    // {
-    //     snprintf(tx_buffer, sizeBuffer, "NACK");
-    //     return 0;
-    // }
-    return 1;
+    if (distanceAllowed <= connection.poorConnection)
+    {
+        err = set_connection_type_int("distanceAllowed", connection.poorConnection);
+        if (err != ESP_OK)
+        {
+            ESP_LOGE(TAG, "Failed to set distanceAllowed with poorConnection value %d, error: %s", connection.poorConnection, esp_err_to_name(err));
+        }
+        else
+        {
+            ESP_LOGI(TAG, "Successfully set distanceAllowed to poorConnection value %d", connection.poorConnection);
+        }
+    }
+    else if (distanceAllowed <= connection.decentConnection)
+    {
+        err = set_connection_type_int("distanceAllowed", connection.decentConnection);
+        if (err != ESP_OK)
+        {
+            ESP_LOGE(TAG, "Failed to set distanceAllowed with decentConnection value %d, error: %s", connection.decentConnection, esp_err_to_name(err));
+        }
+        else
+        {
+            ESP_LOGI(TAG, "Successfully set distanceAllowed to decentConnection value %d", connection.decentConnection);
+        }
+    }
+    else if (distanceAllowed <= connection.goodConnection)
+    {
+        err = set_connection_type_int("distanceAllowed", connection.goodConnection);
+        if (err != ESP_OK)
+        {
+            ESP_LOGE(TAG, "Failed to set distanceAllowed with goodConnection value %d, error: %s", connection.goodConnection, esp_err_to_name(err));
+        }
+        else
+        {
+            ESP_LOGI(TAG, "Successfully set distanceAllowed to goodConnection value %d", connection.goodConnection);
+        }
+    }
+    // Free memory if tokens were dynamically allocated
+    free(tokens);
+    return true;
 }

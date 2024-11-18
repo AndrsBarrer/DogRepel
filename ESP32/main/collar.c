@@ -196,7 +196,7 @@ void led_duty_task(void *param)
     ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
 
     // Turn the alarm LED on
-    ESP_LOGI("LED_TASK", "Turning ALARM LED ON");
+    // ESP_LOGI("LED_TASK", "Turning ALARM LED ON");
     gpio_set_level(ALARM_LED, 1);
 
     // Keep the duty cycle at 4000 for 5 seconds
@@ -207,7 +207,7 @@ void led_duty_task(void *param)
     ledc_update_duty(ledc_channel.speed_mode, ledc_channel.channel);
 
     // Turn the alarm LED off
-    ESP_LOGI("LED_TASK", "Turning ALARM LED OFF");
+    // ESP_LOGI("LED_TASK", "Turning ALARM LED OFF");
     gpio_set_level(ALARM_LED, 0);
 
     // Release the semaphore once the task completes
@@ -232,6 +232,42 @@ void start_pwm_task()
     }
 }
 
+#define DEFAULT_ALLOWED_DISTANCE 50 // Define a default value if not set in NVS
+
+esp_err_t get_connection_type_int(const char *key, int *value)
+{
+    nvs_handle_t my_handle;
+    esp_err_t err = nvs_open(NVS_NAMESPACE_CONNECTION, NVS_READWRITE, &my_handle);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE(TAG, "Failed to open NVS handle: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    // Get the value from NVS
+    err = nvs_get_i32(my_handle, key, value);
+    if (err != ESP_OK)
+    {
+        if (err == ESP_ERR_NVS_NOT_FOUND)
+        {
+            ESP_LOGW(TAG, "%s not set, using default value", key);
+            *value = DEFAULT_ALLOWED_DISTANCE; // Set a default value if not found
+        }
+        else
+        {
+            ESP_LOGE(TAG, "Failed to get %s value, err: %s", key, esp_err_to_name(err));
+        }
+        nvs_close(my_handle); // Ensure handle is closed even if error occurs
+        return err;
+    }
+
+    // Close the NVS handle
+    nvs_close(my_handle);
+    return ESP_OK;
+}
+
+int distanceAllowed = 0;
+
 static void sniffer_task(void *pvParameter)
 {
     ESP_LOGI(TAG, "[+] Sniffer Task created");
@@ -239,7 +275,15 @@ static void sniffer_task(void *pvParameter)
 
     while (1)
     {
-        delayMs(1);
+        // Get the distance value that should be allowed
+        esp_err_t err = get_connection_type_int("distanceAllowed", &distanceAllowed);
+        if (err != ESP_OK)
+        {
+            // Handle error
+            ESP_LOGE(TAG, "Error retrieving Distance Allowed value.");
+        }
+
+        delayMs(10000);
     }
 }
 
@@ -354,8 +398,11 @@ static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t 
                 // If it's okay to process the packet
                 if (can_process)
                 {
-                    // If the RSSI is =< allowed
-                    if ((int8_t)packet->rx_ctrl.rssi >= (int8_t)-50)
+                    // If the gotten rssi signal is less than the allowed,
+                    // that means that the signal is exceeding the limit (we are working with negative values)
+                    // Example: received -30, allowed is -80: Alarm doesnt turn on
+                    // Example: received -90, allowed is -80: Alarm turns on
+                    if ((int8_t)packet->rx_ctrl.rssi <= (int8_t)distanceAllowed)
                     {
 
                         if (current_mac_index < MAX_DEVICES)
@@ -391,13 +438,13 @@ static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t 
                         // Log the info obtained
                         ESP_LOGI(TAG, "[!] MAC Address: %s", mac_string);
                         ESP_LOGI(TAG, "[!] RSSI: %d", packet->rx_ctrl.rssi);
-                        ESP_LOGI(TAG, "[!] SSID: %.*s\n\n", ssid_len, ssid);
+                        // ESP_LOGI(TAG, "[!] SSID: %.*s\n\n", ssid_len, ssid);
 
                         // Save the stored MAC so that the TCP task can send a message
                         strcpy(got_collar_mac, mac_string);
 
                         // Print all of the available stored MAC addresses
-                        printMACS(mac_list, current_mac_index);
+                        // printMACS(mac_list, current_mac_index);
                     }
                 }
             }
@@ -434,12 +481,6 @@ void formatMAC2STR(uint8_t mac[6], char *returnMACstr)
 
 #ifdef COLLAR_CODE
 
-// Function prototypes
-esp_err_t initIO();
-void ADC1_Ch3_Ini(void);
-float ADC1_Ch3_Read(void);
-float ADC1_Ch3_Read_mV(void);
-
 void app_main(void)
 {
     esp_err_t err;
@@ -466,6 +507,9 @@ void app_main(void)
 
     wifi_init_sta();
     esp_sleep_enable_timer_wakeup(5 * 1000000); // added 5 second sleep
+
+    // Initialize the server disconnected LED to ON
+    gpio_set_level(SERVER_DC_LED, 1);
 
     while (1)
     {

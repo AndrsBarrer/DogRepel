@@ -10,6 +10,8 @@
 #include "helper.h"
 #include "wifi.h"
 
+#define NVS_NAMESPACE_CONNECTION "connection_data"
+
 extern bool runTCPtask;
 
 void tcp_client_task(void *pvParameters);
