@@ -58,9 +58,17 @@ server.on("connection", function (sock) {
   console.log("[!] CONNECTED: " + sock.remoteAddress + ":" + sock.remotePort);
   sockets.push(sock);
 
-  sock.on("data", function (data) {
-    //console.log("DATA " + sock.remoteAddress + ": " + data);
+  // This message is used to initialize the default distance that the esp should be set at (default setting)
+  // Every certain amount of time, get default value from database, if value has changed,
+  // then send a message to the ESP so that it can save the value in its NVS for distance tolerated
 
+  // On the server side, it a value changes in the database, send a message to esp
+  // ESP saves value into NVS
+  // On bootup, ESP gets value for distance tolerance from its NVS
+  // On the website, changes can be made to the database
+  sock.write("DogRepelEvent/-50");
+
+  sock.on("data", function (data) {
     // Upload the event to the database
     uploadMessage(data);
   });
