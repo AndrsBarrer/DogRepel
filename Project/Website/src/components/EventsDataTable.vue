@@ -60,11 +60,3 @@ onMounted(() => {
 
 const visits = ref();
 </script>
-
-<style scoped lang="scss">
-.title {
-  text-align: center;
-  margin-top: 2rem;
-  font-size: 25px;
-}
-</style>
