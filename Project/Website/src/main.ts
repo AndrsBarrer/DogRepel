@@ -11,6 +11,8 @@ import Column from "primevue/column";
 import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
 
+// import Select from "../../node_modules/@primevue/themes/types/select";
+
 // Theme imports - order is important
 import "primevue/resources/themes/lara-dark-blue/theme.css";
 import "primevue/resources/primevue.min.css";
@@ -33,5 +35,4 @@ app.component("DataTable", DataTable);
 app.component("Column", Column);
 app.component("InputText", InputText);
 app.component("InputNumber", InputNumber);
-
 app.mount("#app");

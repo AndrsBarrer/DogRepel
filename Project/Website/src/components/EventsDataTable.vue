@@ -20,7 +20,7 @@ import DogService from "../services/DogService";
 let intervalId: NodeJS.Timeout;
 
 const fetchVisits = async () => {
-  DogService.getDogVisits().then((result) => {
+  DogService.getDogVisits("static").then((result) => {
     const formattedData = result.data.map((visit) => {
       const date = new Date(visit.visit_time);
 

@@ -3,6 +3,7 @@ import axios from "axios";
 export interface Station {
   station_id: number;
   location: string;
+  allowedDistance: number;
 }
 
 // Create an instance of Axios with a base URL if needed
@@ -60,7 +61,8 @@ const StationService = {
 
   async updateStationInfo(data: Station) {
     try {
-      await apiClient.put("/stations", data);
+      const response = await apiClient.put("/stations", data);
+      return response;
     } catch (error) {
       console.log("An error occurred updating station: ", error);
       throw error;

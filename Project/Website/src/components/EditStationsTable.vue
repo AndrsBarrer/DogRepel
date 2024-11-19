@@ -17,9 +17,29 @@
         },
       }"
     >
-      <Column field="location" header="Location" style="width: 100px">
+      <Column field="location" header="Location" style="width: 40%">
         <template #editor="{ data, field }">
           <InputText v-model="data[field]" class="edit-input" />
+        </template>
+      </Column>
+
+      <Column field="category" header="Distance" style="width: 20%">
+        <template #editor="{ data, field }">
+          <Dropdown
+            v-model="data[field]"
+            :options="allowedDistances"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Distance"
+            fluid
+          >
+            <template #option="slotProps">
+              <Tag :value="slotProps.option.value" />
+            </template>
+          </Dropdown>
+        </template>
+        <template #body="slotProps">
+          <Tag :value="slotProps.data.category" />
         </template>
       </Column>
 
@@ -34,6 +54,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
+
+import Dropdown from "primevue/dropdown";
+import Tag from "primevue/tag";
+
 import StationService from "../services/StationService";
 let intervalId: NodeJS.Timeout;
 
@@ -44,15 +68,61 @@ const editingRows = ref([]);
 // to not interrupt user when they are editing the table
 const stationReference = ref({});
 
+// Used to be shown in the drop down Select
+const allowedDistances = ref([
+  { label: "High", value: "HIGH" },
+  { label: "Medium", value: "MEDIUM" },
+  { label: "Low", value: "LOW" },
+]);
+
+const LOW_THRESHOLD = -70;
+const MEDIUM_THRESHOLD = -50;
+const HIGH_THRESHOLD = -30;
+
+// Function to map a number to its category
+function getCategoryFromNumber(number: number) {
+  if (number <= LOW_THRESHOLD) {
+    return "LOW";
+  } else if (number <= MEDIUM_THRESHOLD) {
+    return "MEDIUM";
+  } else if (number <= HIGH_THRESHOLD) {
+    return "HIGH";
+  } else {
+    return "UNKNOWN"; // In case the value exceeds the highest threshold
+  }
+}
+
+// Function to map a category to its corresponding number
+function getNumberFromCategory(category: string): number {
+  switch (category) {
+    case "LOW":
+      return LOW_THRESHOLD;
+    case "MEDIUM":
+      return MEDIUM_THRESHOLD;
+    case "HIGH":
+      return HIGH_THRESHOLD;
+    default:
+      return -1; // Return -1 for unknown category
+  }
+}
+
 // Function to fetch and update dogs data
 const fetchStations = async () => {
   try {
     const data = await StationService.getStations();
+    //console.log(data);
     // Check if the data received is different than what was there before (used to not refresh UI)
     if (
       JSON.stringify(stationReference.value) !== JSON.stringify(data.results)
     ) {
-      stations.value = data.results;
+      // console.log(JSON.stringify(stationReference.value));
+      // console.log(JSON.stringify(data.results));
+
+      // Transform the gotten number into its corresponding category
+      stations.value = data.results.map((station: any) => ({
+        ...station, // Spread the original station object
+        category: getCategoryFromNumber(station.allowedDistance),
+      }));
       stationReference.value = stations.value;
     }
   } catch (error) {
@@ -77,6 +147,7 @@ const onRowEditSave = async (event) => {
   const { newData, index } = event;
   // Check if newData is correct and update
   if (newData) {
+    newData.allowedDistance = getNumberFromCategory(newData.category);
     stations.value = [
       ...stations.value.slice(0, index),
       { ...newData },

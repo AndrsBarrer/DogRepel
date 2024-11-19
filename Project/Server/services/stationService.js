@@ -10,9 +10,21 @@ const insertStation = async (location) => {
   return await db.query(query, [location]);
 };
 
-const updateStation = async (station_id, location) => {
-  const query = "UPDATE stations SET location = ? WHERE station_id = ?";
-  return await db.query(query, [location, station_id]);
+const updateStation = async (
+  station_id,
+  location,
+  allowedDistance,
+  category
+) => {
+  const query = `
+      UPDATE stations 
+      SET location = ?, allowedDistance = ?, category = ?
+      WHERE station_id = ?
+    `;
+  const values = [location, allowedDistance, category, station_id];
+
+  const [result] = await db.query(query, values);
+  return result;
 };
 
 const getStationByMac = async (mac) => {
@@ -45,14 +57,18 @@ const createDogVisit = async (station_mac, collar_mac, distance) => {
     ]);
     const dog_name = results[0].name;
 
-    [results] = await db.query("SELECT location FROM stations WHERE mac = ?", [
-      station_mac,
-    ]);
+    // Get the station's location and station_id based on the station_mac
+    [results] = await db.query(
+      "SELECT location, station_id FROM stations WHERE mac = ?",
+      [station_mac]
+    );
     const location = results[0].location;
+    const station_id = results[0].station_id;
 
+    // Insert the dog visit, including the station_id
     await db.query(
-      "INSERT INTO dog_visits (dog_name, location, distance) VALUES (?,?,?)",
-      [dog_name, location, distance]
+      "INSERT INTO dog_visits (dog_name, location, station_id, distance) VALUES (?,?,?,?)",
+      [dog_name, location, station_id, distance]
     );
   } catch (error) {
     console.log("Could not create event: ", error);

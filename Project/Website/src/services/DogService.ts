@@ -45,9 +45,11 @@ const DogService = {
     }
   },
 
-  async getDogVisits() {
+  async getDogVisits(mode: string) {
     try {
-      const response = await apiClient.get("/dogs/dog_visits");
+      const response = await apiClient.get("/dogs/dog_visits", {
+        params: { mode },
+      });
       return response;
     } catch (error) {
       console.error("Error fetching dog visits:", error);

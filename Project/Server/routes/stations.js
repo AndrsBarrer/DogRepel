@@ -35,8 +35,14 @@ router.post("/", async (req, res) => {
 
 router.put("/", async (req, res) => {
   try {
-    const { station_id, location } = req.body;
-    let [result] = await stationService.updateStation(station_id, location);
+    const { station_id, location, allowedDistance, category } = req.body;
+
+    const result = await stationService.updateStation(
+      station_id,
+      location,
+      allowedDistance,
+      category
+    );
     res.status(200).json({
       message: "Succesfully updated values.",
       result: result,
@@ -69,58 +75,6 @@ router.get("/stationLocation", async (req, res) => {
   } catch (err) {
     console.error("SQL Error:", err);
     res.status(500).json({ error: "Failed to fetch station location." });
-  }
-});
-
-router.get("/station-settings", async (req, res) => {
-  try {
-    const [results] = await db.query("SELECT * FROM station_settings");
-    res.json(results);
-  } catch (err) {
-    console.error("SQL Error:", err);
-    res.status(500).json({ error: "Failed to fetch station settings" });
-  }
-});
-
-router.post("/station_settings", async (req, res) => {
-  try {
-    const { station_id, sensitivity, camera_activation } = req.body;
-    let query =
-      "INSERT INTO station_settings (station_id, sensitivity, camera_activation) VALUES (?, ?, ?)";
-    const [result] = await db.query(query, [
-      station_id,
-      sensitivity,
-      camera_activation,
-    ]);
-    res.status(200).json({
-      message: "Succesfully inserted values.",
-      result: result,
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: error,
-    });
-  }
-});
-
-router.put("/station_settings", async (req, res) => {
-  try {
-    const { station_id, sensitivity, camera_activation } = req.body;
-    let query =
-      "UPDATE station_settings SET sensitivity = ?, camera_activation = ? WHERE station_id = ?";
-    const [result] = await db.query(query, [
-      sensitivity,
-      camera_activation,
-      station_id,
-    ]);
-    res.status(200).json({
-      message: "Succesfully updated values.",
-      result: result,
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: error,
-    });
   }
 });
 

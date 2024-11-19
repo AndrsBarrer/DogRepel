@@ -135,23 +135,27 @@ router.put("/dog_settings", async (req, res) => {
 
 router.get("/dog_visits", async (req, res) => {
   try {
-    const [results] = await db.query("SELECT * FROM dog_visits");
-    // const [results] = await db.query(`
-    //   SELECT
-    //       dv.visit_id,
-    //       dv.dog_name,
-    //       dv.location,
-    //       dv.visit_time,
-    //       dv.distance,
-    //       d.name AS dog_name,
-    //       s.location
-    //   FROM
-    //       dog_visits dv
-    //   JOIN
-    //       dogs d ON dv.dog_name = d.dog_name
-    //   JOIN
-    //       stations s ON dv.location = s.location;`);
-    res.status(200).json(results);
+    // Default is static if not provided
+    const { mode } = req.query;
+    let result;
+
+    if (mode === "dynamic") {
+      [result] = await db.query(
+        "SELECT d.name AS dog_name, s.location, dv.distance, dv.visit_id, dv.visit_time \
+      FROM dogs d JOIN dog_visits dv ON d.name = dv.dog_name \
+      JOIN stations s ON s.location = dv.location \
+      ORDER BY dv.visit_time ASC; "
+      );
+    } else {
+      [result] = await db.query("SELECT * FROM dog_visits");
+
+      // [result] = await db.query(
+      //   "SELECT dv.*, s.station_id \
+      //   FROM dog_visits dv \
+      //   JOIN stations s ON dv.location = s.location; "
+      // );
+    }
+    res.status(200).json(result);
   } catch (err) {
     console.error("SQL Error:", err);
     res.status(500).json({ error: "Failed to fetch dog visits" });

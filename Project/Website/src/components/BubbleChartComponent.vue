@@ -32,35 +32,35 @@ const hueToRGB = (hue: number) => {
 
 const fetchData = async () => {
   try {
-    const dogVisits = await DogService.getDogVisits().then(
+    const dogVisits = await DogService.getDogVisits("static").then(
       (result) => result.data
     );
 
     const stationVisitMap = dogVisits.reduce((acc, visit: Visit) => {
-      const { location, distance } = visit;
+      const { station_id, distance } = visit;
 
-      if (!acc[location]) {
-        acc[location] = { count: 0, totalDistance: 0, visits: 0 };
+      if (!acc[station_id]) {
+        acc[station_id] = { count: 0, totalDistance: 0, visits: 0 };
       }
-      acc[location].count += 1;
-      acc[location].totalDistance += distance;
-      acc[location].visits += 1;
+      acc[station_id].count += 1;
+      acc[station_id].totalDistance += distance;
+      acc[station_id].visits += 1;
       return acc;
     }, {});
 
     return await Promise.all(
-      Object.entries(stationVisitMap).map(async ([location, info]) => {
-        const station = await StationService.getStationByLocation(location);
-        const stationId = station[0].station_id;
+      Object.entries(stationVisitMap).map(async ([station_id, info]) => {
+        const station_id_num = Number(station_id);
+        let station = await StationService.getStation(station_id_num);
 
         return {
-          stationId,
+          station_id: station_id_num,
+          station_name: station[0].location,
           x: info.count,
           y: Math.abs(info.totalDistance / info.visits),
           r: Math.abs(info.totalDistance / info.visits),
-          station_name: station[0].location,
-          backgroundColor: generateColor(stationId),
-          borderColor: generateColor(stationId),
+          backgroundColor: generateColor(station_id_num),
+          borderColor: generateColor(station_id_num),
         };
       })
     );
@@ -82,7 +82,7 @@ const initChart = (data) => {
         x: Number(item.x),
         y: Number(item.y),
         r: Number(item.r),
-        stationId: item.stationId,
+        station_id: item.station_id,
       },
     ],
     backgroundColor: String(item.backgroundColor),
@@ -115,13 +115,13 @@ const initChart = (data) => {
       plugins: {
         legend: {
           onClick: function (event, legendItem) {
-            const datasetIndex = legendItem.datasetIndex; // works
-            const dataset = this.chart.data.datasets[datasetIndex]; // works
-            const stationId = dataset.data[0].stationId; //works
+            const datasetIndex = legendItem.datasetIndex;
+            const dataset = this.chart.data.datasets[datasetIndex];
+            const station_id = dataset.data[0].station_id;
 
-            const isVisible = !this.chart.isDatasetVisible(datasetIndex); // works
+            const isVisible = !this.chart.isDatasetVisible(datasetIndex);
             // Update visibility state
-            legendVisibility[stationId] = isVisible;
+            legendVisibility[station_id] = isVisible;
 
             // Toggle visibility in the chart
             this.chart.setDatasetVisibility(datasetIndex, isVisible);
@@ -139,14 +139,13 @@ const initChart = (data) => {
 
 const updateChartData = (chart, newData) => {
   if (!chart) return;
-
   const datasets = newData.map((item) => {
-    const isVisible = legendVisibility[item.stationId] !== false; // Respect visibility state
+    const isVisible = legendVisibility[item.station_id] !== false; // Respect visibility state
     return {
       label: item.station_name,
       data: [
         {
-          stationId: item.stationId,
+          station_id: item.station_id,
           x: item.x,
           y: item.y,
           r: item.r,

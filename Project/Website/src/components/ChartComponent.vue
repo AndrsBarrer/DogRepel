@@ -91,7 +91,7 @@ const oldDogVisits = ref({});
 
 async function fetchDogVisits() {
   try {
-    const dogVisits = await DogService.getDogVisits().then(
+    const dogVisits = await DogService.getDogVisits("dynamic").then(
       (result) => result.data
     );
 
