@@ -400,9 +400,8 @@ static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t 
                 {
                     // If the gotten rssi signal is less than the allowed,
                     // that means that the signal is exceeding the limit (we are working with negative values)
-                    // Example: received -30, allowed is -80: Alarm doesnt turn on
-                    // Example: received -90, allowed is -80: Alarm turns on
-                    if ((int8_t)packet->rx_ctrl.rssi <= (int8_t)distanceAllowed)
+                    // https://www.metageek.com/training/resources/understanding-rssi/
+                    if ((int8_t)packet->rx_ctrl.rssi >= (int8_t)distanceAllowed)
                     {
 
                         if (current_mac_index < MAX_DEVICES)
