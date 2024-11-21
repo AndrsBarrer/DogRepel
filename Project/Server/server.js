@@ -49,15 +49,14 @@ socket.on("message", function (message, remote) {
   }
 });
 socket.bind("12345");
+let sockets = [];
 
 const server = net.createServer();
 server.listen(port, host, () => {
   console.log("[TCP] TCP Server is running on port " + port + ".");
 });
 
-let sockets = [];
-
-server.on("connection", function (sock) {
+server.on("connection", async function (sock) {
   console.log("[TCP] CONNECTED: " + sock.remoteAddress + ":" + sock.remotePort);
   sockets.push(sock);
 
@@ -70,7 +69,8 @@ server.on("connection", function (sock) {
   // On bootup, ESP gets value for distance tolerance from its NVS
   // On the website, changes can be made to the database
   // This value is a default setting
-  sock.write("DogRepel/Write/-60");
+  const defaultDistance = await stationService.getDefaultDistance();
+  sock.write(`DogRepel/Write/${defaultDistance}`);
 
   sock.on("data", async function (data) {
     // Check if what was received was the MAC from the device
@@ -114,6 +114,11 @@ server.on("connection", function (sock) {
     if (index !== -1) sockets.splice(index, 1);
     console.log("[TCP] CLOSED: " + sock.remoteAddress + " " + sock.remotePort);
   });
+
+  // Handle connection errors
+  sock.on("error", (err) => {
+    console.error("Socket error:", err.message);
+  });
 });
 
 // Store intervals for each MAC
@@ -123,13 +128,13 @@ function startPeriodicCheck(mac) {
   const interval = setInterval(async () => {
     try {
       // Retrieve the station's allowed RSSI value from the database
-      const currentRssi = await stationService
+      const stationConnectionInfo = await stationService
         .getStationByMac(mac)
         .then((station) => {
-          return station[0]?.allowedDistance; // Ensure station exists and has an allowedDistance
+          return station.category; // Ensure station exists and has a value for its category
         });
 
-      if (currentRssi === undefined) {
+      if (stationConnectionInfo.value === undefined) {
         //console.warn(`No RSSI value found for MAC ${mac}. Skipping check.`);
         return;
       }
@@ -139,14 +144,14 @@ function startPeriodicCheck(mac) {
         const lastRssi = lastRssiValues.get(mac);
 
         // If the RSSI value has changed, send an update
-        if (lastRssi !== currentRssi) {
+        if (lastRssi !== stationConnectionInfo.value) {
           console.log(
-            `[!] RSSI changed for MAC ${mac}: ${lastRssi} -> ${currentRssi}`
+            `[!] RSSI changed for MAC ${mac}: ${lastRssi} -> ${stationConnectionInfo.value}`
           );
-          socket.write(`DogRepel/Update/${currentRssi}`);
+          socket.write(`DogRepel/Update/${stationConnectionInfo.value}`);
 
           // Update the last known RSSI value
-          lastRssiValues.set(mac, currentRssi);
+          lastRssiValues.set(mac, stationConnectionInfo.value);
         }
       } else {
         console.warn(`No active socket found for MAC ${mac}.`);
@@ -173,10 +178,10 @@ const uploadMessage = async (message) => {
     const station_mac = msg[1];
     const collar_mac = msg[2];
     const rssi = Number(msg[3]);
-    console.log("[+] Uploading new event:");
-    console.log("    Station MAC:", station_mac);
-    console.log("    Collar MAC:", collar_mac);
-    console.log("    RSSI:", rssi, "\n");
+    // console.log("[+] Uploading new event:");
+    // console.log("    Station MAC:", station_mac);
+    // console.log("    Collar MAC:", collar_mac);
+    // console.log("    RSSI:", rssi, "\n");
 
     let stationResults = await stationService.getStationByMac(station_mac);
     if (stationResults.length == 0) {

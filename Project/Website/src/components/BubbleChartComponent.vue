@@ -32,10 +32,10 @@ const hueToRGB = (hue: number) => {
 
 const fetchData = async () => {
   try {
-    const dogVisits = await DogService.getDogVisits("static").then(
+    const dogVisits = await DogService.getDogVisits("dynamic").then(
       (result) => result.data
     );
-
+    console.log(dogVisits);
     const stationVisitMap = dogVisits.reduce((acc, visit: Visit) => {
       const { station_id, distance } = visit;
 

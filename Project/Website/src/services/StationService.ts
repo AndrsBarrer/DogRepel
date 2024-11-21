@@ -3,7 +3,7 @@ import axios from "axios";
 export interface Station {
   station_id: number;
   location: string;
-  allowedDistance: number;
+  category: string;
 }
 
 // Create an instance of Axios with a base URL if needed

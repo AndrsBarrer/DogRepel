@@ -10,18 +10,13 @@ const insertStation = async (location) => {
   return await db.query(query, [location]);
 };
 
-const updateStation = async (
-  station_id,
-  location,
-  allowedDistance,
-  category
-) => {
+const updateStation = async (station_id, location, category) => {
   const query = `
       UPDATE stations 
-      SET location = ?, allowedDistance = ?, category = ?
+      SET location = ?, category = ?
       WHERE station_id = ?
     `;
-  const values = [location, allowedDistance, category, station_id];
+  const values = [location, category, station_id];
 
   const [result] = await db.query(query, values);
   return result;
@@ -29,10 +24,37 @@ const updateStation = async (
 
 const getStationByMac = async (mac) => {
   try {
-    const [results] = await db.query("SELECT * FROM stations WHERE mac = ?", [
-      mac,
-    ]);
-    return results;
+    const [rows] = await db.query(
+      `SELECT 
+         s.station_id,
+         s.mac,
+         s.location,
+         rc.category AS label,
+         rc.threshold AS value
+       FROM 
+         stations s
+       JOIN 
+         rssi_categories rc ON s.category = rc.category
+       WHERE 
+         s.mac = ?`,
+      [mac]
+    );
+
+    if (rows.length === 0) {
+      return { error: "No station found with the given MAC address." };
+    }
+
+    const result = rows.map((row) => ({
+      station_id: row.station_id,
+      mac: row.mac,
+      location: row.location,
+      category: {
+        label: row.label,
+        value: row.value,
+      },
+    }));
+
+    return result[0];
   } catch (error) {
     console.log("Error: ", error);
   }
@@ -40,7 +62,10 @@ const getStationByMac = async (mac) => {
 
 const createStationByMac = async (mac) => {
   try {
-    await db.query("INSERT INTO stations (mac) VALUES (?)", [mac]);
+    await db.query("INSERT INTO stations (mac, category) VALUES (?, ?)", [
+      mac,
+      "MEDIUM",
+    ]);
   } catch (error) {
     console.log("Could not create station: ", error);
   }
@@ -74,6 +99,13 @@ const createDogVisit = async (station_mac, collar_mac, distance) => {
     console.log("Could not create event: ", error);
   }
 };
+
+const getDefaultDistance = async () => {
+  const [result] = await db.query(
+    "SELECT threshold FROM `rssi_categories` WHERE category = 'MEDIUM'"
+  );
+  return result[0].threshold;
+};
 module.exports = {
   getAllStations,
   insertStation,
@@ -82,4 +114,5 @@ module.exports = {
   createStationByMac,
   getDogVisits,
   createDogVisit,
+  getDefaultDistance,
 };

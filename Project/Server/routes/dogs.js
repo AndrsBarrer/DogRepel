@@ -141,19 +141,13 @@ router.get("/dog_visits", async (req, res) => {
 
     if (mode === "dynamic") {
       [result] = await db.query(
-        "SELECT d.name AS dog_name, s.location, dv.distance, dv.visit_id, dv.visit_time \
+        "SELECT d.name AS dog_name, s.station_id, s.location, dv.distance, dv.visit_id, dv.visit_time \
       FROM dogs d JOIN dog_visits dv ON d.name = dv.dog_name \
       JOIN stations s ON s.location = dv.location \
       ORDER BY dv.visit_time ASC; "
       );
     } else {
       [result] = await db.query("SELECT * FROM dog_visits");
-
-      // [result] = await db.query(
-      //   "SELECT dv.*, s.station_id \
-      //   FROM dog_visits dv \
-      //   JOIN stations s ON dv.location = s.location; "
-      // );
     }
     res.status(200).json(result);
   } catch (err) {

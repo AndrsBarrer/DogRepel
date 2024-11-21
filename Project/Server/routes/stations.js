@@ -35,12 +35,11 @@ router.post("/", async (req, res) => {
 
 router.put("/", async (req, res) => {
   try {
-    const { station_id, location, allowedDistance, category } = req.body;
+    const { station_id, location, category } = req.body;
 
     const result = await stationService.updateStation(
       station_id,
       location,
-      allowedDistance,
       category
     );
     res.status(200).json({

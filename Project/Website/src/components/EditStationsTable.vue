@@ -75,54 +75,15 @@ const allowedDistances = ref([
   { label: "Low", value: "LOW" },
 ]);
 
-const LOW_THRESHOLD = -70;
-const MEDIUM_THRESHOLD = -50;
-const HIGH_THRESHOLD = -30;
-
-// Function to map a number to its category
-function getCategoryFromNumber(number: number) {
-  if (number <= LOW_THRESHOLD) {
-    return "LOW";
-  } else if (number <= MEDIUM_THRESHOLD) {
-    return "MEDIUM";
-  } else if (number <= HIGH_THRESHOLD) {
-    return "HIGH";
-  } else {
-    return "UNKNOWN"; // In case the value exceeds the highest threshold
-  }
-}
-
-// Function to map a category to its corresponding number
-function getNumberFromCategory(category: string): number {
-  switch (category) {
-    case "LOW":
-      return LOW_THRESHOLD;
-    case "MEDIUM":
-      return MEDIUM_THRESHOLD;
-    case "HIGH":
-      return HIGH_THRESHOLD;
-    default:
-      return -1; // Return -1 for unknown category
-  }
-}
-
 // Function to fetch and update dogs data
 const fetchStations = async () => {
   try {
     const data = await StationService.getStations();
-    //console.log(data);
     // Check if the data received is different than what was there before (used to not refresh UI)
     if (
       JSON.stringify(stationReference.value) !== JSON.stringify(data.results)
     ) {
-      // console.log(JSON.stringify(stationReference.value));
-      // console.log(JSON.stringify(data.results));
-
-      // Transform the gotten number into its corresponding category
-      stations.value = data.results.map((station: any) => ({
-        ...station, // Spread the original station object
-        category: getCategoryFromNumber(station.allowedDistance),
-      }));
+      stations.value = data.results;
       stationReference.value = stations.value;
     }
   } catch (error) {
@@ -147,7 +108,6 @@ const onRowEditSave = async (event) => {
   const { newData, index } = event;
   // Check if newData is correct and update
   if (newData) {
-    newData.allowedDistance = getNumberFromCategory(newData.category);
     stations.value = [
       ...stations.value.slice(0, index),
       { ...newData },
