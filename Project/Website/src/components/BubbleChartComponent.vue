@@ -35,7 +35,6 @@ const fetchData = async () => {
     const dogVisits = await DogService.getDogVisits("dynamic").then(
       (result) => result.data
     );
-    console.log(dogVisits);
     const stationVisitMap = dogVisits.reduce((acc, visit: Visit) => {
       const { station_id, distance } = visit;
 
@@ -166,7 +165,7 @@ const fetchBubbleInfo = async () => {
   try {
     const fetchedData = await fetchData();
     if (!fetchedData.length) {
-      console.error("No data available to plot.");
+      //console.error("No data available to plot.");
       return;
     }
 

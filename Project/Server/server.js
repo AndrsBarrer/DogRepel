@@ -80,8 +80,8 @@ server.on("connection", async function (sock) {
       macToSocket.set(saved_mac, sock);
 
       let stationResults = await stationService.getStationByMac(saved_mac);
-      if (stationResults.length == 0) {
-        await stationService.createStationByMac(saved_mac);
+      if (stationResults.length === 0) {
+        let result = await stationService.createStationByMac(saved_mac);
       }
 
       // Start periodic checking for this device
@@ -131,7 +131,7 @@ function startPeriodicCheck(mac) {
       const stationConnectionInfo = await stationService
         .getStationByMac(mac)
         .then((station) => {
-          return station.category; // Ensure station exists and has a value for its category
+          return station[0].category; // Ensure station exists and has a value for its category
         });
 
       if (stationConnectionInfo.value === undefined) {

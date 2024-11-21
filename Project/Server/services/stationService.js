@@ -40,10 +40,6 @@ const getStationByMac = async (mac) => {
       [mac]
     );
 
-    if (rows.length === 0) {
-      return { error: "No station found with the given MAC address." };
-    }
-
     const result = rows.map((row) => ({
       station_id: row.station_id,
       mac: row.mac,
@@ -53,8 +49,7 @@ const getStationByMac = async (mac) => {
         value: row.value,
       },
     }));
-
-    return result[0];
+    return result;
   } catch (error) {
     console.log("Error: ", error);
   }
@@ -62,10 +57,11 @@ const getStationByMac = async (mac) => {
 
 const createStationByMac = async (mac) => {
   try {
-    await db.query("INSERT INTO stations (mac, category) VALUES (?, ?)", [
-      mac,
-      "MEDIUM",
-    ]);
+    const result = await db.query(
+      "INSERT INTO stations (mac, category) VALUES (?, ?)",
+      [mac, "MEDIUM"]
+    );
+    return result;
   } catch (error) {
     console.log("Could not create station: ", error);
   }
