@@ -3,7 +3,10 @@
 #include "pwm.h"
 #include "tcp.h"
 
-#ifdef STATION_CODE
+#ifdef STATION
+
+/* TAG of ESP32 for I/O operation */
+static const char *TAG = "Sniff sniff";
 
 // Declare a semaphore to control task execution
 SemaphoreHandle_t xSemaphore;
@@ -104,6 +107,9 @@ void app_main(void)
     // Initialize LEDs for visual information
     initIO();
 
+    // Initialize the server disconnected LED to ON
+    gpio_set_level(SERVER_DC_LED, 1);
+
     ESP_LOGI(TAG, "[+] Startup...");
 
     ESP_LOGI(TAG, "[+] Reading MAC of Station Mode");
@@ -140,7 +146,7 @@ void app_main(void)
         wifi_init_sta();
 
         resolve_server_ip(server_ip, sizeof(server_ip));
-        ESP_LOGI(TAG, "Server IP resolved: %s", server_ip);
+        ESP_LOGI(TAG, "[✓] Server IP resolved: %s", server_ip);
 
         // Set configuration of timer0 for high speed channels
         ledc_timer_config(&ledc_timer);
@@ -232,41 +238,7 @@ void start_pwm_task()
     }
 }
 
-#define DEFAULT_ALLOWED_DISTANCE 50 // Define a default value if not set in NVS
-
-esp_err_t get_connection_type_int(const char *key, int *value)
-{
-    nvs_handle_t my_handle;
-    esp_err_t err = nvs_open(NVS_NAMESPACE_CONNECTION, NVS_READWRITE, &my_handle);
-    if (err != ESP_OK)
-    {
-        ESP_LOGE(TAG, "Failed to open NVS handle: %s", esp_err_to_name(err));
-        return err;
-    }
-
-    // Get the value from NVS
-    err = nvs_get_i32(my_handle, key, value);
-    if (err != ESP_OK)
-    {
-        if (err == ESP_ERR_NVS_NOT_FOUND)
-        {
-            ESP_LOGW(TAG, "%s not set, using default value", key);
-            *value = DEFAULT_ALLOWED_DISTANCE; // Set a default value if not found
-        }
-        else
-        {
-            ESP_LOGE(TAG, "Failed to get %s value, err: %s", key, esp_err_to_name(err));
-        }
-        nvs_close(my_handle); // Ensure handle is closed even if error occurs
-        return err;
-    }
-
-    // Close the NVS handle
-    nvs_close(my_handle);
-    return ESP_OK;
-}
-
-int distanceAllowed = 0;
+int32_t distanceAllowed = 0;
 
 static void sniffer_task(void *pvParameter)
 {
@@ -478,7 +450,7 @@ void formatMAC2STR(uint8_t mac[6], char *returnMACstr)
 
 #endif
 
-#ifdef COLLAR_CODE
+#ifdef COLLAR
 
 void app_main(void)
 {
@@ -506,9 +478,6 @@ void app_main(void)
 
     wifi_init_sta();
     esp_sleep_enable_timer_wakeup(5 * 1000000); // added 5 second sleep
-
-    // Initialize the server disconnected LED to ON
-    gpio_set_level(SERVER_DC_LED, 1);
 
     while (1)
     {

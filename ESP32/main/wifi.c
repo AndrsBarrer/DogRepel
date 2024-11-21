@@ -30,7 +30,7 @@ static esp_err_t root_handler(httpd_req_t *req)
         "<form action=\"/process-info\" method=\"post\">"
         "<label for=\"ssid_input\">Enter WiFi Credentials</label>"
         "<input type=\"text\" id=\"ssid_input\" name=\"ssid\" placeholder=\"SSID\" required />"
-        "<input type=\"text\" id=\"password_input\" name=\"password\" placeholder=\"Password\" required />"
+        "<input type=\"password\" id=\"password_input\" name=\"password\" placeholder=\"Password\" required />"
         "<input type=\"submit\" value=\"Submit\" />"
         "</form>"
         "</body>"
@@ -242,8 +242,6 @@ void wifi_init_sta(void)
     ESP_LOGI(TAG, "Using password: %s", pass);
 }
 
-#endif
-
 void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
@@ -267,6 +265,8 @@ void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id
         xTaskCreate(tcp_client_task, "tcp_client_task", 4096, NULL, 5, NULL);
     }
 }
+
+#endif
 
 #ifdef COLLAR
 
