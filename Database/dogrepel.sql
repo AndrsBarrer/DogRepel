@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 09, 2024 at 05:54 AM
--- Server version: 8.4.0
--- PHP Version: 8.2.12
+-- Generation Time: Oct 05, 2024 at 10:27 PM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -28,18 +28,12 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `dogs` (
-  `dog_id` int NOT NULL,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `breed` varchar(255) DEFAULT NULL,
-  `age` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `dogs`
---
-
-INSERT INTO `dogs` (`dog_id`, `name`, `breed`, `age`) VALUES
-(1, 'Maya', 'Chihuahua', 1);
+  `dog_id` int(11) NOT NULL,
+  `mac` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL DEFAULT 'Dog',
+  `breed` varchar(255) DEFAULT 'Dog',
+  `age` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 -- --------------------------------------------------------
 
@@ -48,9 +42,9 @@ INSERT INTO `dogs` (`dog_id`, `name`, `breed`, `age`) VALUES
 --
 
 CREATE TABLE `dog_settings` (
-  `dog_id` int NOT NULL,
+  `dog_id` int(11) NOT NULL,
   `alert_distance` float NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 -- --------------------------------------------------------
 
@@ -59,19 +53,12 @@ CREATE TABLE `dog_settings` (
 --
 
 CREATE TABLE `dog_visits` (
-  `visit_id` int NOT NULL,
-  `dog_id` int NOT NULL,
-  `station_id` int NOT NULL,
-  `visit_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `visit_id` int(11) NOT NULL,
+  `dog_id` int(11) NOT NULL,
+  `station_id` int(11) NOT NULL,
+  `visit_time` timestamp NULL DEFAULT current_timestamp(),
   `distance` float NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `dog_visits`
---
-
-INSERT INTO `dog_visits` (`visit_id`, `dog_id`, `station_id`, `visit_time`, `distance`) VALUES
-(1, 1, 1, '2024-09-09 00:34:08', 2.4);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 -- --------------------------------------------------------
 
@@ -80,11 +67,11 @@ INSERT INTO `dog_visits` (`visit_id`, `dog_id`, `station_id`, `visit_time`, `dis
 --
 
 CREATE TABLE `images` (
-  `image_id` int NOT NULL,
-  `visit_id` int NOT NULL,
+  `image_id` int(11) NOT NULL,
+  `visit_id` int(11) NOT NULL,
   `image_path` varchar(255) NOT NULL,
-  `capture_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `capture_time` timestamp NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 -- --------------------------------------------------------
 
@@ -93,16 +80,10 @@ CREATE TABLE `images` (
 --
 
 CREATE TABLE `stations` (
-  `station_id` int NOT NULL,
-  `location` varchar(255) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dumping data for table `stations`
---
-
-INSERT INTO `stations` (`station_id`, `location`) VALUES
-(1, 'Living Room');
+  `station_id` int(11) NOT NULL,
+  `mac` varchar(255) NOT NULL,
+  `location` varchar(255) DEFAULT 'Location'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 -- --------------------------------------------------------
 
@@ -111,10 +92,10 @@ INSERT INTO `stations` (`station_id`, `location`) VALUES
 --
 
 CREATE TABLE `station_settings` (
-  `station_id` int NOT NULL,
-  `sensitivity` int NOT NULL,
-  `camera_activation` tinyint(1) NOT NULL DEFAULT '1'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `station_id` int(11) NOT NULL,
+  `sensitivity` int(11) NOT NULL,
+  `camera_activation` tinyint(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
 -- Indexes for dumped tables
@@ -167,31 +148,31 @@ ALTER TABLE `station_settings`
 -- AUTO_INCREMENT for table `dogs`
 --
 ALTER TABLE `dogs`
-  MODIFY `dog_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `dog_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `dog_visits`
 --
 ALTER TABLE `dog_visits`
-  MODIFY `visit_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `visit_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
 
 --
 -- AUTO_INCREMENT for table `images`
 --
 ALTER TABLE `images`
-  MODIFY `image_id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `image_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `stations`
 --
 ALTER TABLE `stations`
-  MODIFY `station_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `station_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `station_settings`
 --
 ALTER TABLE `station_settings`
-  MODIFY `station_id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `station_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables

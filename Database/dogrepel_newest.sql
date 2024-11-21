@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 05, 2024 at 10:27 PM
+-- Generation Time: Nov 21, 2024 at 03:51 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -38,24 +38,14 @@ CREATE TABLE `dogs` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `dog_settings`
---
-
-CREATE TABLE `dog_settings` (
-  `dog_id` int(11) NOT NULL,
-  `alert_distance` float NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `dog_visits`
 --
 
 CREATE TABLE `dog_visits` (
   `visit_id` int(11) NOT NULL,
-  `dog_id` int(11) NOT NULL,
+  `dog_name` varchar(255) NOT NULL,
   `station_id` int(11) NOT NULL,
+  `location` varchar(255) NOT NULL,
   `visit_time` timestamp NULL DEFAULT current_timestamp(),
   `distance` float NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
@@ -63,15 +53,22 @@ CREATE TABLE `dog_visits` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `images`
+-- Table structure for table `rssi_categories`
 --
 
-CREATE TABLE `images` (
-  `image_id` int(11) NOT NULL,
-  `visit_id` int(11) NOT NULL,
-  `image_path` varchar(255) NOT NULL,
-  `capture_time` timestamp NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+CREATE TABLE `rssi_categories` (
+  `category` varchar(15) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL,
+  `threshold` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `rssi_categories`
+--
+
+INSERT INTO `rssi_categories` (`category`, `threshold`) VALUES
+('HIGH', -30),
+('LOW', -70),
+('MEDIUM', -50);
 
 -- --------------------------------------------------------
 
@@ -82,19 +79,8 @@ CREATE TABLE `images` (
 CREATE TABLE `stations` (
   `station_id` int(11) NOT NULL,
   `mac` varchar(255) NOT NULL,
-  `location` varchar(255) DEFAULT 'Location'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `station_settings`
---
-
-CREATE TABLE `station_settings` (
-  `station_id` int(11) NOT NULL,
-  `sensitivity` int(11) NOT NULL,
-  `camera_activation` tinyint(1) NOT NULL DEFAULT 1
+  `location` varchar(255) DEFAULT 'Location',
+  `category` varchar(15) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
@@ -108,37 +94,24 @@ ALTER TABLE `dogs`
   ADD PRIMARY KEY (`dog_id`);
 
 --
--- Indexes for table `dog_settings`
---
-ALTER TABLE `dog_settings`
-  ADD PRIMARY KEY (`dog_id`);
-
---
 -- Indexes for table `dog_visits`
 --
 ALTER TABLE `dog_visits`
-  ADD PRIMARY KEY (`visit_id`),
-  ADD KEY `dog_id` (`dog_id`),
-  ADD KEY `station_id` (`station_id`);
+  ADD PRIMARY KEY (`visit_id`);
 
 --
--- Indexes for table `images`
+-- Indexes for table `rssi_categories`
 --
-ALTER TABLE `images`
-  ADD PRIMARY KEY (`image_id`),
-  ADD KEY `visit_id` (`visit_id`);
+ALTER TABLE `rssi_categories`
+  ADD PRIMARY KEY (`category`),
+  ADD KEY `idx_category` (`category`);
 
 --
 -- Indexes for table `stations`
 --
 ALTER TABLE `stations`
-  ADD PRIMARY KEY (`station_id`);
-
---
--- Indexes for table `station_settings`
---
-ALTER TABLE `station_settings`
-  ADD PRIMARY KEY (`station_id`);
+  ADD PRIMARY KEY (`station_id`),
+  ADD KEY `fk_category` (`category`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -148,60 +121,29 @@ ALTER TABLE `station_settings`
 -- AUTO_INCREMENT for table `dogs`
 --
 ALTER TABLE `dogs`
-  MODIFY `dog_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `dog_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `dog_visits`
 --
 ALTER TABLE `dog_visits`
-  MODIFY `visit_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
-
---
--- AUTO_INCREMENT for table `images`
---
-ALTER TABLE `images`
-  MODIFY `image_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `visit_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4178;
 
 --
 -- AUTO_INCREMENT for table `stations`
 --
 ALTER TABLE `stations`
-  MODIFY `station_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT for table `station_settings`
---
-ALTER TABLE `station_settings`
-  MODIFY `station_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `station_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- Constraints for dumped tables
 --
 
 --
--- Constraints for table `dog_settings`
+-- Constraints for table `stations`
 --
-ALTER TABLE `dog_settings`
-  ADD CONSTRAINT `dog_settings_ibfk_1` FOREIGN KEY (`dog_id`) REFERENCES `dogs` (`dog_id`);
-
---
--- Constraints for table `dog_visits`
---
-ALTER TABLE `dog_visits`
-  ADD CONSTRAINT `dog_visits_ibfk_1` FOREIGN KEY (`dog_id`) REFERENCES `dogs` (`dog_id`),
-  ADD CONSTRAINT `dog_visits_ibfk_2` FOREIGN KEY (`station_id`) REFERENCES `stations` (`station_id`);
-
---
--- Constraints for table `images`
---
-ALTER TABLE `images`
-  ADD CONSTRAINT `images_ibfk_1` FOREIGN KEY (`visit_id`) REFERENCES `dog_visits` (`visit_id`);
-
---
--- Constraints for table `station_settings`
---
-ALTER TABLE `station_settings`
-  ADD CONSTRAINT `station_settings_ibfk_1` FOREIGN KEY (`station_id`) REFERENCES `stations` (`station_id`);
+ALTER TABLE `stations`
+  ADD CONSTRAINT `fk_category` FOREIGN KEY (`category`) REFERENCES `rssi_categories` (`category`) ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
