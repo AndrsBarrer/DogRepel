@@ -85,8 +85,8 @@ const initChart = (data) => {
       },
     ],
     backgroundColor: String(item.backgroundColor),
-    borderColor: "white",
-    borderWidth: 2,
+    borderColor: item.backgroundColor,
+    borderWidth: 3,
   }));
 
   const chartConfig = {
@@ -98,14 +98,14 @@ const initChart = (data) => {
       scales: {
         x: {
           type: "linear",
-          grid: { color: "rgba(255, 255, 255, 0.5)" },
+          grid: { color: "rgba(0, 0, 0, 0.5)" },
           title: { display: true, text: "Number of Visits (Frequency)" },
           min: 0,
           max: 1000,
         },
         y: {
           type: "linear",
-          grid: { color: "rgba(255, 255, 255, 0.1)" },
+          grid: { color: "rgba(0, 0, 0, 0.1)" },
           title: { display: true, text: "Average abs. RSSI (Distance)" },
           min: 0,
           max: 100,
@@ -127,7 +127,7 @@ const initChart = (data) => {
             this.chart.update();
           },
           display: true,
-          labels: { color: "white" },
+          labels: { color: "black" },
         },
       },
     },
@@ -151,8 +151,8 @@ const updateChartData = (chart, newData) => {
         },
       ],
       backgroundColor: item.backgroundColor,
-      borderColor: "white",
-      borderWidth: 2,
+      borderColor: item.backgroundColor,
+      borderWidth: 3,
       hidden: !isVisible, // Apply visibility state
     };
   });

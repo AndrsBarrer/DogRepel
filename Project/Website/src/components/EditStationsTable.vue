@@ -123,20 +123,20 @@ const onRowEditSave = async (event) => {
   width: 60%;
   max-width: 100%;
   box-sizing: border-box;
-  background-color: #1e2530;
+  /* background-color: #1e2530; */
   border-radius: 6px;
-  border: 1px solid #2a323d;
-  color: white;
+  /* border: 1px solid #2a323d; */
+  /* color: white; */
   padding: 0.5rem;
 }
 
 :deep(.p-inputnumber-input) {
   width: 100% !important;
   max-width: 100% !important;
-  background-color: #1e2530;
+  /* background-color: #1e2530; */
   border-radius: 6px;
-  border: 1px solid #2a323d;
-  color: white;
+  /* border: 1px solid #2a323d; */
+  /* color: white; */
   padding: 0.5rem;
   outline: none;
 }

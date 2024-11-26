@@ -14,8 +14,8 @@ import InputNumber from "primevue/inputnumber";
 // import Select from "../../node_modules/@primevue/themes/types/select";
 
 // Theme imports - order is important
-import "primevue/resources/themes/lara-dark-blue/theme.css";
-import "primevue/resources/primevue.min.css";
+//import "primevue/resources/themes/lara-dark-blue/theme.css";
+import "primevue/resources/themes/lara-light-blue/theme.css";
 import "primeicons/primeicons.css";
 
 const app = createApp(App);
@@ -25,7 +25,7 @@ axios.defaults.baseURL = "http://localhost:4000";
 app.use(PrimeVue, {
   ripple: true,
   unstyled: false,
-  dark: true, // Enable dark mode explicitly
+  dark: false,
 });
 
 app.use(router); // Use the router instance with the app

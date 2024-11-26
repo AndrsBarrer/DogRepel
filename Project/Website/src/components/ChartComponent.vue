@@ -42,7 +42,7 @@ let reactiveChartOptions = reactive({
           this.chart.update();
         },
         labels: {
-          color: "white", // Set legend text color to white
+          color: "black", // Set legend text color to black
         },
       },
     },
@@ -51,13 +51,13 @@ let reactiveChartOptions = reactive({
         title: {
           display: true,
           text: "Hour of Day",
-          color: "white", // Set x-axis title color to white
+          color: "black", // Set x-axis title color to black
         },
         ticks: {
-          color: "white", // Set x-axis tick color to white
+          color: "black", // Set x-axis tick color to black
         },
         grid: {
-          color: "rgba(255, 255, 255, 0.2)", // Set x-axis grid line color to white with slight transparency
+          color: "rgba(0, 0, 0, 0.5)", // Set x-axis grid line color to black with slight transparency
         },
       },
       y: {
@@ -66,10 +66,10 @@ let reactiveChartOptions = reactive({
         title: {
           display: true,
           text: "Proximity",
-          color: "white", // Set y-axis title color to white
+          color: "black", // Set y-axis title color to black
         },
         ticks: {
-          color: "white", // Set y-axis tick color to white
+          color: "black", // Set y-axis tick color to black
           callback: function (value: number) {
             if (value === -80) return "Low";
             if (value === -40) return "Medium";
@@ -79,7 +79,7 @@ let reactiveChartOptions = reactive({
           stepSize: 40,
         },
         grid: {
-          color: "rgba(255, 255, 255, 0.2)", // Set y-axis grid line color to white with slight transparency
+          color: "rgba(0, 0, 0, 0.5)", // Set y-axis grid line color to black with slight transparency
         },
       },
     },
