@@ -10,6 +10,7 @@ import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
+import Tooltip from "primevue/tooltip";
 
 // import Select from "../../node_modules/@primevue/themes/types/select";
 
@@ -35,4 +36,6 @@ app.component("DataTable", DataTable);
 app.component("Column", Column);
 app.component("InputText", InputText);
 app.component("InputNumber", InputNumber);
+app.directive("tooltip", Tooltip);
+
 app.mount("#app");

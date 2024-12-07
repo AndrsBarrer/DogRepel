@@ -1,5 +1,14 @@
 <template>
   <div class="card">
+    <div class="chart-info-title">
+      <h1 class="small-title">Dog Info</h1>
+      <!-- <Button
+        icon="pi pi-info-circle"
+        class="p-button-text p-button-rounded"
+        v-tooltip="'LOW = An event is recorded only when the dog is very close'"
+        >i</Button
+      > -->
+    </div>
     <DataTable
       v-model:editingRows="editingRows"
       :value="dogs"
@@ -122,5 +131,31 @@ const onRowEditSave = async (event) => {
 :deep(.p-inputnumber) {
   border: none;
   background: none;
+}
+
+.chart-info-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+
+  .small-title {
+    text-align: center;
+
+    font-size: 25px;
+    line-height: 1;
+  }
+
+  .p-button-rounded {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+  }
 }
 </style>

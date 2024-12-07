@@ -8,7 +8,6 @@
       <BubbleChartComponent />
 
       <div class="tables-wrapper">
-        <h1 class="small-title">Dog and Station Info</h1>
         <div class="tables">
           <EditDogsTable />
           <EditStationsTable />
