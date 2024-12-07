@@ -133,7 +133,7 @@ esp_err_t get_connection_type_int(const char *key, int *value)
     {
         if (err == ESP_ERR_NVS_NOT_FOUND)
         {
-            ESP_LOGW(TAG, "%s not set, using default value", key);
+            ESP_LOGW(TAG, "[!] %s not set, using default value", key);
             *value = DEFAULT_ALLOWED_DISTANCE; // Set a default value if not found
         }
         else

@@ -90,7 +90,7 @@ static void resolve_server_ip(char *host_ip, size_t ip_size)
         receive_buffer[len] = 0;
 
         // Log the received IP address and message
-        ESP_LOGI(TAG, "Received from %s: %s", inet_ntoa(source_addr.sin_addr), receive_buffer);
+        ESP_LOGI(TAG, "[!] Received from %s: %s", inet_ntoa(source_addr.sin_addr), receive_buffer);
 
         // Store the server's IP address
         strncpy(host_ip, inet_ntoa(source_addr.sin_addr), ip_size);
@@ -148,19 +148,14 @@ void app_main(void)
         resolve_server_ip(server_ip, sizeof(server_ip));
         ESP_LOGI(TAG, "[✓] Server IP resolved: %s", server_ip);
 
-        // Set configuration of timer0 for high speed channels
-        ledc_timer_config(&ledc_timer);
-
         // Prepare and set configuration of timer1 for low speed channels
-        ledc_timer.speed_mode = LEDC_HS_MODE;
-        ledc_timer.timer_num = LEDC_HS_TIMER;
         ledc_timer_config(&ledc_timer);
 
-        // Set LED Controller with previously prepared configuration
-        ledc_channel_config(&ledc_channel);
+        ledc_channel_config(&ledc_channel); // Configure channel
+        ledc_update_duty(LEDC_HS_MODE, LEDC_HS_CH1_CHANNEL);
 
         // Initialize fade service.
-        ledc_fade_func_install(0);
+        // ledc_fade_func_install(0);
 
         // Initialize the semaphore as "available" (binary semaphore)
         xSemaphore = xSemaphoreCreateBinary();
@@ -172,7 +167,7 @@ void app_main(void)
 
     while (RUNNING)
     {
-        // Both SSID and Password were stored for the ESP to connect to given WiFi in Station mode
+        // // Both SSID and Password were stored for the ESP to connect to given WiFi in Station mode
         if (storedSSID && storedPASS)
         {
             nvs_handle_t my_handle;
@@ -248,11 +243,11 @@ static void sniffer_task(void *pvParameter)
     while (1)
     {
         // Get the distance value that should be allowed
-        esp_err_t err = get_connection_type_int("distanceAllowed", &distanceAllowed);
+        esp_err_t err = get_connection_type_int("distanceLabel", &distanceAllowed);
         if (err != ESP_OK)
         {
             // Handle error
-            ESP_LOGE(TAG, "Error retrieving Distance Allowed value.");
+            ESP_LOGE(TAG, "[X] Error retrieving Distance Allowed value.");
         }
 
         delayMs(10000);
@@ -375,7 +370,6 @@ static void wifi_sniffer_packet_handler(void *buff, wifi_promiscuous_pkt_type_t 
                     // https://www.metageek.com/training/resources/understanding-rssi/
                     if ((int8_t)packet->rx_ctrl.rssi >= (int8_t)distanceAllowed)
                     {
-
                         if (current_mac_index < MAX_DEVICES)
                         {
                             // First check if the mac already is in the list and update the timestamp value
