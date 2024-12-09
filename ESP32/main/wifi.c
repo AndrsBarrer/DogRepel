@@ -301,7 +301,7 @@ void wifi_init_sta(void)
     esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_sta_config);
     esp_wifi_start();
 
-    ESP_LOGI(TAG, "wifi_init_sta finished.");
+    ESP_LOGI(TAG_STA, "wifi_init_sta finished.");
 }
 
 static void wifi_event_handler(void *arg, esp_event_base_t event_base,
@@ -311,11 +311,11 @@ static void wifi_event_handler(void *arg, esp_event_base_t event_base,
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
     {
         esp_wifi_connect();
-        ESP_LOGI(TAG, "Station started");
+        ESP_LOGI(TAG_STA, "Station started");
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
-        ESP_LOGI(TAG, "Sending out probe request.");
+        ESP_LOGI(TAG_STA, "Sending out probe request.");
 
         esp_wifi_connect();
         esp_deep_sleep_start();
