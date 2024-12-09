@@ -1,3 +1,4 @@
+#ifdef STATION
 #include "mac.h"
 #include "wifi.h"
 
@@ -27,3 +28,4 @@ void formatMAC2STR(uint8_t mac[6], char *returnMACstr)
 }
 
 static packet_info_timeout mac_list[MAX_DEVICES];
+#endif

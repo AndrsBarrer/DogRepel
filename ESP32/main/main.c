@@ -473,6 +473,7 @@ void app_main(void)
     wifi_init_sta();
     esp_sleep_enable_timer_wakeup(5 * 1000000); // added 5 second sleep
 
+    esp_deep_sleep_start();
     while (1)
     {
         delayMs(1);
