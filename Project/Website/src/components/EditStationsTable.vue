@@ -2,12 +2,44 @@
   <div class="card">
     <div class="chart-info-title">
       <h1 class="small-title">Station Info</h1>
+      <!-- Button to Open the Dialog -->
       <Button
-        icon="pi pi-info-circle"
-        class="p-button-text p-button-rounded"
-        v-tooltip="'LOW = An event is recorded only when the dog is very close'"
-        >i</Button
+        label="More info"
+        class="p-button-info"
+        @click="showDialog = true"
+      />
+
+      <!-- Dialog Popup -->
+      <Dialog
+        v-model:visible="showDialog"
+        header="How to Use"
+        modal
+        :closable="false"
+        style="width: 30vw"
+        :draggable="false"
       >
+        <div class="flex flex-col items-center gap-4">
+          <!-- SVG Illustration -->
+          <div v-html="systemRadius"></div>
+
+          <!-- Explanation Text -->
+          <p class="text-center">
+            <strong class="LOW">LOW:</strong> Event recorded when the dog is
+            very close. <br />
+            <strong class="MEDIUM">MEDIUM:</strong> Event recorded when the dog
+            is at a moderate distance. <br />
+            <strong class="HIGH">HIGH:</strong> Event recorded when the dog is
+            far away. <br />
+          </p>
+
+          <!-- Close Button -->
+          <Button
+            label="Got it"
+            class="p-button-success"
+            @click="showDialog = false"
+          />
+        </div>
+      </Dialog>
     </div>
     <DataTable
       v-model:editingRows="editingRows"
@@ -32,14 +64,14 @@
         </template>
       </Column>
 
-      <Column field="category" header="Distance" style="width: 20%">
+      <Column field="category" header="Threshold" style="width: 20%">
         <template #editor="{ data, field }">
           <Dropdown
             v-model="data[field]"
             :options="allowedDistances"
             optionLabel="label"
             optionValue="value"
-            placeholder="Distance"
+            placeholder="Threshold"
             fluid
           >
             <template #option="slotProps">
@@ -67,11 +99,19 @@ import { Tooltip } from "primevue/tooltip";
 import Dropdown from "primevue/dropdown";
 import Tag from "primevue/tag";
 
+import Button from "primevue/button";
+import Dialog from "primevue/dialog";
+
+import systemRadius from "./icons/systemRadius.svg?raw";
+console.log(systemRadius); // Should print the file path or asset URL
+
 import StationService from "../services/StationService";
 let intervalId: NodeJS.Timeout;
 
 const stations = ref([]);
 const editingRows = ref([]);
+
+const showDialog = ref(false); // Controls the visibility of the dialog
 
 // Used to know whether interface should be updated or not,
 // to not interrupt user when they are editing the table
@@ -179,5 +219,34 @@ const onRowEditSave = async (event) => {
     justify-content: center;
     font-size: 1rem;
   }
+}
+
+.text-center .HIGH::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background-color: #b0e0e6;
+  margin-right: 8px; /* Adjust the spacing between the square and the text */
+  vertical-align: middle; /* Aligns the square with the text */
+}
+.text-center .MEDIUM::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background-color: #87cefa;
+  margin-right: 8px; /* Adjust the spacing between the square and the text */
+  vertical-align: middle; /* Aligns the square with the text */
+}
+
+.text-center .LOW::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background-color: #4169e1;
+  margin-right: 8px; /* Adjust the spacing between the square and the text */
+  vertical-align: middle; /* Aligns the square with the text */
 }
 </style>

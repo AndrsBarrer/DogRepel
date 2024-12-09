@@ -129,6 +129,15 @@ const initChart = (data) => {
           display: true,
           labels: { color: "black" },
         },
+        tooltip: {
+          callbacks: {
+            // Customize the tooltip content
+            label: function (tooltipItem) {
+              // Display only the total number of events (x value)
+              return `Total Events: ${tooltipItem.raw.x}`;
+            },
+          },
+        },
       },
     },
   };

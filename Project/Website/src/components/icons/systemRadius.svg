@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <!-- Outermost circle (lightest) - rotating clockwise -->
+  <circle cx="200" cy="200" r="180" fill="none" stroke="#B0E0E6" stroke-width="10" stroke-dasharray="10,10">
+    <animateTransform 
+      attributeName="transform" 
+      type="rotate" 
+      from="0 200 200" 
+      to="360 200 200" 
+      dur="30s" 
+      repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Middle circle (medium) - rotating counterclockwise -->
+  <circle cx="200" cy="200" r="120" fill="none" stroke="#87CEFA" stroke-width="10" stroke-dasharray="15,15">
+    <animateTransform 
+      attributeName="transform" 
+      type="rotate" 
+      from="360 200 200" 
+      to="0 200 200" 
+      dur="20s" 
+      repeatCount="indefinite"/>
+  </circle>
+
+
+  <!-- Inner circle (darkest) - rotating clockwise -->
+  <circle cx="200" cy="200" r="60" fill="none" stroke="#4169E1" stroke-width="10" stroke-dasharray="20,20">
+    <animateTransform 
+      attributeName="transform" 
+      type="rotate" 
+      from="0 200 200" 
+      to="360 200 200" 
+      dur="10s" 
+      repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Central device representation - static -->
+  <circle cx="200" cy="200" r="20" fill="#FF6347"/>
+</svg>
