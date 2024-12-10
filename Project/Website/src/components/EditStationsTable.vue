@@ -27,10 +27,10 @@
             <strong class="RED-CIRCLE">Station</strong><br />
             <strong class="HIGH">HIGH:</strong> Event radius is very close
             (≈1m)<br />
-            <strong class="MEDIUM">MEDIUM:</strong> Event radius is
-            moderate.(≈3-4m)<br />
-            <strong class="LOW">LOW:</strong> Event radius is very
-            far.(≈6-8m)<br />
+            <strong class="MEDIUM">MEDIUM:</strong> Event radius is moderate
+            (≈3-4m)<br />
+            <strong class="LOW">LOW:</strong> Event radius is very far
+            (≈6-8m)<br />
           </p>
 
           <!-- Close Button -->
