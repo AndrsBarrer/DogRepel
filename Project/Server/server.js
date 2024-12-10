@@ -80,8 +80,9 @@ server.on("connection", async function (sock) {
       macToSocket.set(saved_mac, sock);
 
       let stationResults = await stationService.getStationByMac(saved_mac);
+
       if (stationResults.length === 0) {
-        let result = await stationService.createStationByMac(saved_mac);
+        await stationService.createStationByMac(saved_mac);
       }
 
       // Start periodic checking for this device

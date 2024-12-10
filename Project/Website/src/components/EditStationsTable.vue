@@ -24,7 +24,7 @@
 
           <!-- Explanation Text -->
           <p class="text-center">
-            <strong class="RED-CIRCLE">CIRCLE:</strong> Station <br />
+            <strong class="RED-CIRCLE">Station</strong><br />
             <strong class="HIGH">HIGH:</strong> Event radius is very close<br />
             <strong class="MEDIUM">MEDIUM:</strong> Event radius is moderate.<br />
             <strong class="LOW">LOW:</strong> Event radius is very far.<br />
@@ -101,7 +101,6 @@ import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 
 import systemRadius from "./icons/systemRadius.svg?raw";
-console.log(systemRadius); // Should print the file path or asset URL
 
 import StationService from "../services/StationService";
 let intervalId: NodeJS.Timeout;
@@ -216,6 +215,12 @@ const onRowEditSave = async (event) => {
     align-items: center;
     justify-content: center;
     font-size: 1rem;
+  }
+  .p-button-info {
+    box-shadow: none;
+    font-size: 12px;
+    padding: 5px 10px;
+    height: auto;
   }
 }
 
