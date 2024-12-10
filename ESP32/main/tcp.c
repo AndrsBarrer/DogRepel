@@ -1,5 +1,7 @@
-#ifdef STATION
+#include "config.h"
 #include "tcp.h"
+
+#ifdef STATION
 
 static char *TAG = "TCP";
 

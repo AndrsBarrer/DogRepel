@@ -1,3 +1,4 @@
+#include "config.h"
 #include "main.h"
 #include "wifi.h"
 #include "pwm.h"

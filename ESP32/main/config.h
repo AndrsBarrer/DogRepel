@@ -1,2 +1,2 @@
-#define COLLAR
-//#define STATION
+//#define COLLAR
+#define STATION
