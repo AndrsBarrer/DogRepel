@@ -77,6 +77,7 @@ server.on("connection", async function (sock) {
     if (String(data).split("/")[0] === "MAC") {
       // Save the gotten MAC from the connected device
       const saved_mac = String(data).split("/")[1].substring(0, 17);
+
       macToSocket.set(saved_mac, sock);
 
       let stationResults = await stationService.getStationByMac(saved_mac);
@@ -183,11 +184,6 @@ const uploadMessage = async (message) => {
     // console.log("    Station MAC:", station_mac);
     // console.log("    Collar MAC:", collar_mac);
     // console.log("    RSSI:", rssi, "\n");
-
-    let stationResults = await stationService.getStationByMac(station_mac);
-    if (stationResults.length == 0) {
-      await stationService.createStationByMac(station_mac);
-    }
 
     // Check if the MAC address of the station is already registered (GET /stations)
     let collarResults = await dogService.getDogByMac(collar_mac);
