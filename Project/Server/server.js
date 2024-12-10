@@ -76,7 +76,7 @@ server.on("connection", async function (sock) {
     // Check if what was received was the MAC from the device
     if (String(data).split("/")[0] === "MAC") {
       // Save the gotten MAC from the connected device
-      const saved_mac = String(data).split("/")[1];
+      const saved_mac = String(data).split("/")[1].substring(0, 17);
       macToSocket.set(saved_mac, sock);
 
       let stationResults = await stationService.getStationByMac(saved_mac);

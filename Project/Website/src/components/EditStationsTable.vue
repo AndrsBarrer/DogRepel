@@ -24,12 +24,10 @@
 
           <!-- Explanation Text -->
           <p class="text-center">
-            <strong class="LOW">LOW:</strong> Event recorded when the dog is
-            very close. <br />
-            <strong class="MEDIUM">MEDIUM:</strong> Event recorded when the dog
-            is at a moderate distance. <br />
-            <strong class="HIGH">HIGH:</strong> Event recorded when the dog is
-            far away. <br />
+            <strong class="RED-CIRCLE">CIRCLE:</strong> Station <br />
+            <strong class="HIGH">HIGH:</strong> Event radius is very close<br />
+            <strong class="MEDIUM">MEDIUM:</strong> Event radius is moderate.<br />
+            <strong class="LOW">LOW:</strong> Event radius is very far.<br />
           </p>
 
           <!-- Close Button -->
@@ -221,7 +219,7 @@ const onRowEditSave = async (event) => {
   }
 }
 
-.text-center .HIGH::before {
+.text-center .LOW::before {
   content: "";
   display: inline-block;
   width: 12px;
@@ -240,12 +238,23 @@ const onRowEditSave = async (event) => {
   vertical-align: middle; /* Aligns the square with the text */
 }
 
-.text-center .LOW::before {
+.text-center .HIGH::before {
   content: "";
   display: inline-block;
   width: 12px;
   height: 12px;
   background-color: #4169e1;
+  margin-right: 8px; /* Adjust the spacing between the square and the text */
+  vertical-align: middle; /* Aligns the square with the text */
+}
+
+.text-center .RED-CIRCLE::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 360%;
+  background-color: #ff6347;
   margin-right: 8px; /* Adjust the spacing between the square and the text */
   vertical-align: middle; /* Aligns the square with the text */
 }
