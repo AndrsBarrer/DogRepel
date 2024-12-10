@@ -1,2 +1,2 @@
-idf_component_register(SRCS "mac.c" "main.c" "wifi.c" "tcp.c" "gpio.c" "helper.c"
+idf_component_register(SRCS "main.c" "mac.c" "wifi.c" "tcp.c" "helper.c"
                     INCLUDE_DIRS ".")

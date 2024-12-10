@@ -1,4 +1,7 @@
+#include "config.h"
 #include "tcp.h"
+
+#ifdef STATION
 
 static char *TAG = "TCP";
 
@@ -246,3 +249,4 @@ esp_err_t handleDeviceCommand(char *rx_buffer)
     free(tokens);
     return ESP_OK;
 }
+#endif
