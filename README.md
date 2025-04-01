@@ -23,24 +23,32 @@ This project tracks dog behavior using ESP32 devices to measure proximity betwee
    idf.py flash
    ```
 
-#Backend Server
+# Backend Server
+
 Clone the repository:
+
 ```bash
-git clone https://github.com/your-repo/dog-behavior-tracking-system.git
-cd dog-behavior-tracking-system
+git clone https://github.com/AndrsBarrer/DogRepel.git
+cd DogRepel
 ```
 
 Install dependencies:
+
 ```
 npm install
 ```
+
 Set up the MySQL database and import the schema.
+I personally used XAMPP to install mariadb.
 
 Start the backend server:
+
 ```
 npm run start
 ```
-#Frontend Web Interface
+
+# Frontend Web Interface
+
 1. Navigate to the frontend folder:
    ```
    cd Website
@@ -55,6 +63,7 @@ npm run start
    ```
 
 # Usage
+
 1. Register the dog collars and stations with the server.
 2. Monitor proximity events and log data in real-time.
 3. Configure station settings and view the dog’s behavior on the web interface.

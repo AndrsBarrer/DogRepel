@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "/home/andres/GitHub/Semestre09/ProyectoDeCarrera/ESP32"
+  "cmake.sourceDirectory": "/home/andres/GitHub/Semestre09/ProyectoDeCarrera/ESP32",
+  "idf.pythonInstallPath": "/usr/bin/python3"
 }
